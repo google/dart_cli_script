@@ -36,6 +36,8 @@ class Script {
 
   final _extraStderrController = StreamController<List<int>>();
 
+  /// See also [success], which should be preferred when simply checking whether
+  /// the script has succeeded.
   Future<int> get exitCode =>
       _exitCompleter.future.then((_) => 0, onError: (error, stackTrace) {
         if (error is! ScriptException) throw error;
