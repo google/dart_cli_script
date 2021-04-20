@@ -77,3 +77,23 @@ String _scanUntil(StringScanner scanner, int endChar) {
     }
   }
 }
+
+/// Converts [argument] to a string and escapes it so it's parsed as a single
+/// argument by [parseArgs].
+///
+/// For example, `run("cp -r ${arg(source)} build/")`.
+String arg(Object argument) {
+  var string = argument.toString();
+  var buffer = StringBuffer();
+  for (var i = 0; i < string.length; i++) {
+    var codeUnit = string.codeUnitAt(i);
+    if (codeUnit == $space ||
+        codeUnit == $double_quote ||
+        codeUnit == $single_quote ||
+        codeUnit == $backslash) {
+      buffer.writeCharCode($backslash);
+    }
+    buffer.writeCharCode(codeUnit);
+  }
+  return buffer.toString();
+}

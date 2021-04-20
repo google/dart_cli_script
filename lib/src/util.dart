@@ -14,13 +14,22 @@
 
 import 'dart:async';
 
+/// Stream extensions used internally within `cli_script`, not for public
+/// consumption.
 extension UtilStreamExtensions<T> on Stream<T> {
-  /// Returns a copy of [this] that runs [callback] immediately after [listen]
-  /// is called.
+  /// Returns a transformation of [this] that runs [callback] immediately after
+  /// [listen] is called.
   Stream<T> onListen(void callback()) =>
       transform(StreamTransformer((stream, cancelOnError) {
         var subscription = stream.listen(null, cancelOnError: cancelOnError);
         callback();
         return subscription;
       }));
+
+  /// Returns a transformation of [this] that only emits error and done events,
+  /// not data events.
+  ///
+  /// Because the returned stream doesn't emit data events, it can be used as a
+  /// stream of any type.
+  Stream<S> withoutData<S>() => where((_) => false).cast<S>();
 }

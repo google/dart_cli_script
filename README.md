@@ -13,6 +13,8 @@ scripting context.
 * [Pipelining](#pipelining)
 * [Composability](#composability)
 * [Dartiness](#dartiness)
+* [Other Features](#other-features)
+  * [Argument Parsing](#argument-parsing)
 
 While `cli_script` can be used as a library in any Dart application, its primary
 goal is to support stand-alone scripts that serve the same purpose as shell
@@ -169,3 +171,36 @@ emitting a non-zero exit code that can be handled like any other `Script`'s.
 that's passed into the callback. The capture block can ignore this completely,
 it can use it as input to a child process or, it can do really whatever it
 wants!
+
+### Other Features
+
+#### Argument Parsing
+
+*(This section describes how `cli_script` parses arguments that your script
+passes into child processes. For parsing arguments passed into your script, we
+recommend the [`args`] package)*
+
+[`args`]: https://pub.dev/packages/args
+
+All `cli_script` functions that spawn subprocesses accept arguments in the same
+format: a string named `executableAndArgs` along with a named `List<String>`
+parameter named `args`. This makes it easy to invoke commands simple commands
+with very little boilerplate (`lines("find . -type f -name '*.dart'")`) *and*
+easy to pass in dynamically-generated arguments without worrying whether they
+contain spaces (`run("cp -r", args: [source, destination])`).
+
+The `executableAndArgs` string is parsed as a space-separated string. Components
+can also be surrounded by single quotes or double quotes, which will allow them
+to contain spaces, as in `run("git commit -m 'A commit message'")`. Characters
+can also be escaped with `\`. The best way to make sure the backslash isn't just
+consumed by Dart itself is to use a [raw string], as in
+`run(r"git commit -m A\ commit\ message")`.
+
+[raw string]: https://www.educative.io/edpresso/how-to-create-a-raw-string-in-dart
+
+The arguments from `executableAndArgs` always come before the arguments in
+`args`. You can also manually escape an argument for interpolation into
+`executableAndArgs` using the [`arg()`] function, as in `run("cp -r
+${arg(source)} build/")`.
+
+[`run()`]: https://pub.dev/documentation/cli_script/latest/cli_script/arg.html
