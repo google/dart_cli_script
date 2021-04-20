@@ -188,8 +188,7 @@ class Script {
             // Once there are no scripts still spawning and no streams still
             // emitting, mark this script as done.
             void checkIdle() {
-              if (spawningScripts.isIdle &&
-                  !exitCodeCompleter.isCompleted) {
+              if (spawningScripts.isIdle && !exitCodeCompleter.isCompleted) {
                 stdoutGroup.close();
                 stderrGroup.close();
                 spawningScripts.close();
@@ -310,7 +309,8 @@ class Script {
       : stdin = IOSink(stdin) {
     this.stdout = stdout.handleError(_handleError).transform(_outputCloser);
     this.stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
-        .handleError(_handleError).transform(_outputCloser);
+        .handleError(_handleError)
+        .transform(_outputCloser);
 
     exitCode.then((code) {
       if (_exitCompleter.isCompleted) return;

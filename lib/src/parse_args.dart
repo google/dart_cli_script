@@ -84,6 +84,8 @@ String _scanUntil(StringScanner scanner, int endChar) {
 /// For example, `run("cp -r ${arg(source)} build/")`.
 String arg(Object argument) {
   var string = argument.toString();
+  if (string.isEmpty) return '""';
+
   var buffer = StringBuffer();
   for (var i = 0; i < string.length; i++) {
     var codeUnit = string.codeUnitAt(i);

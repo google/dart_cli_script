@@ -12,6 +12,9 @@ dependencies:
   stack_trace: ^1.10.0
   string_scanner: ^1.1.0
 
+dev_dependencies:
+  test: ^1.16.8
+
 dependency_overrides:
   async:
     git: {url: git://github.com/dart-lang/async}
