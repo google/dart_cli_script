@@ -19,12 +19,14 @@ import 'dart:async';
 extension UtilStreamExtensions<T> on Stream<T> {
   /// Returns a transformation of [this] that runs [callback] immediately after
   /// [listen] is called.
-  Stream<T> onListen(void callback()) =>
-      transform(StreamTransformer((stream, cancelOnError) {
-        var subscription = stream.listen(null, cancelOnError: cancelOnError);
-        callback();
-        return subscription;
-      }));
+  Stream<T> onListen(void callback()) {
+    callback = Zone.current.bindCallbackGuarded(callback);
+    return transform(StreamTransformer((stream, cancelOnError) {
+      var subscription = stream.listen(null, cancelOnError: cancelOnError);
+      callback();
+      return subscription;
+    }));
+  }
 
   /// Returns a transformation of [this] that only emits error and done events,
   /// not data events.

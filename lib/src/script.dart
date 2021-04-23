@@ -349,6 +349,14 @@ class Script {
       _exitCompleter.completeError(
           ScriptException(name, 256), StackTrace.current);
     }
+
+    // Only close the outputs after a macrotask so any last data has time to
+    // propagate to its listeners.
+    Timer.run(() {
+      // Ignore any subscription cancellation errors, because they come from
+      // within the script and the script has exited.
+      _outputCloser.close().catchError((_) {});
+    });
   }
 
   /// Returns a stream that combines both [stdout] and [stderr] the same way
