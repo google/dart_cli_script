@@ -82,8 +82,7 @@ class Script {
   ///
   /// See also [success], which should be preferred when simply checking whether
   /// the script has succeeded.
-  Future<int> get exitCode =>
-      _exitCompleter.future.then((_) => 0, onError: (error, stackTrace) {
+  Future<int> get exitCode => done.then((_) => 0, onError: (error, stackTrace) {
         if (error is! ScriptException) throw error;
         return error.exitCode;
       });
@@ -99,10 +98,16 @@ class Script {
   /// Throws any Dart exceptions that come up when running this [Script], and
   /// throws a [ScriptException] if the [Script] completes with a non-zero exit
   /// code.
-  Future<void> get done => _exitCompleter.future;
+  late final Future<void> done;
+
+  /// Returns a future that completes when this script finishes running, whether
+  /// or not it encountered an error and without disrupting the error handling
+  /// that would otherwise occur.
+  Future<void> get _doneWithoutError =>
+      _doneCompleter.future.catchError((_) {});
 
   /// The completer for [done].
-  final _exitCompleter = Completer<void>();
+  final _doneCompleter = Completer<void>();
 
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
@@ -175,49 +180,51 @@ class Script {
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
       {String? name}) {
     return Script.fromComponents(name ?? "capture", () {
-      var spawningScripts = FutureGroup<void>();
+      var childScripts = FutureGroup<void>();
       var stdinController = StreamController<List<int>>();
       var stdoutGroup = StreamGroup<List<int>>();
+      var extraStdoutController = StreamController<List<int>>();
       var stderrGroup = StreamGroup<List<int>>();
       var exitCodeCompleter = Completer<int>();
+
+      stdoutGroup.add(extraStdoutController.stream);
 
       runZonedGuarded(
           () async {
             await callback(stdinController.stream);
 
-            // Once there are no scripts still spawning and no streams still
-            // emitting, mark this script as done.
+            // Once there are no child scripts still spawning or running, mark
+            // this script as done.
             void checkIdle() {
-              if (spawningScripts.isIdle && !exitCodeCompleter.isCompleted) {
+              if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
+                extraStdoutController.close();
                 stdoutGroup.close();
                 stderrGroup.close();
-                spawningScripts.close();
+                childScripts.close();
                 exitCodeCompleter.complete(0);
               }
             }
 
             checkIdle();
-            spawningScripts.onIdle.listen((_) => checkIdle());
+            childScripts.onIdle.listen((_) => Timer.run(checkIdle));
           },
           (error, stackTrace) {
             if (!exitCodeCompleter.isCompleted) {
+              extraStdoutController.close();
               stdoutGroup.close();
               stderrGroup.close();
-              spawningScripts.close();
+              childScripts.close();
               exitCodeCompleter.completeError(error, stackTrace);
             }
           },
           zoneValues: {
-            #_spawningScripts: spawningScripts,
+            #_childScripts: childScripts,
             #_stdoutGroup: stdoutGroup,
             #_stderrGroup: stderrGroup
           },
           zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
             if (!exitCodeCompleter.isCompleted) {
-              // Add a new stream for each print rather than keeping open a
-              // single [StreamController] because otherwise we can't detect
-              // when [stdoutGroup] has gone idle.
-              stdoutGroup.add(Stream.value(utf8.encode("$line\n")));
+              extraStdoutController.add(utf8.encode("$line\n"));
             }
           }));
 
@@ -245,8 +252,8 @@ class Script {
       String name, FutureOr<ScriptComponents> callback()) {
     // Run the script after a macrotask elapses, to give the user time to set up
     // handlers for stdout and stderr.
-    var spawningScripts = Zone.current[#_spawningScripts];
-    if (spawningScripts is FutureGroup<void> && spawningScripts.isClosed) {
+    var childScripts = Zone.current[#_childScripts];
+    if (childScripts is FutureGroup<void> && childScripts.isClosed) {
       // The FutureGrop is closed, indicating that the surrounding capture group
       // has already exited.
       throw StateError("Can't create a Script within a Script.capture() block "
@@ -266,7 +273,7 @@ class Script {
     // non-deterministic amount of time, and we want to guarantee as best as
     // possible that if the user adds a listener too late it will fail
     // consistently rather than flakily.
-    var future = Future(() {
+    Timer.run(() {
       if (!stdoutListened) {
         _pipeUnlistenedStream(stdout, #_stdoutGroup, io.stdout);
       }
@@ -275,10 +282,10 @@ class Script {
         _pipeUnlistenedStream(stderr, #_stderrGroup, io.stderr);
       }
     });
-    if (spawningScripts is FutureGroup<void>) spawningScripts.add(future);
 
     var stdinCompleter = StreamSinkCompleter<List<int>>();
-    return Script._(
+
+    var script = Script._(
         name,
         stdinCompleter.sink,
         stdout,
@@ -289,6 +296,11 @@ class Script {
           stderrCompleter.setSourceStream(components.stderr);
           return components.exitCode;
         }));
+
+    if (childScripts is FutureGroup<void>) {
+      childScripts.add(script._doneWithoutError);
+    }
+    return script;
   }
 
   /// Pipes [stream]'s events to a [StreamGroup] named [groupSymbol] in the
@@ -312,13 +324,18 @@ class Script {
         .handleError(_handleError)
         .transform(_outputCloser);
 
+    // Add an extra [Future.then] so that any errors passed to [_doneCompleter]
+    // will still be top-leveled unless [done] specifically has a listener,
+    // *even if* [_doneWithoutError] has its own listener.
+    done = _doneCompleter.future.then((_) {});
+
     exitCode.then((code) {
-      if (_exitCompleter.isCompleted) return;
+      if (_doneCompleter.isCompleted) return;
 
       if (code == 0) {
-        _exitCompleter.complete(null);
+        _doneCompleter.complete(null);
       } else {
-        _exitCompleter.completeError(
+        _doneCompleter.completeError(
             ScriptException(name, code), StackTrace.current);
       }
 
@@ -331,12 +348,12 @@ class Script {
 
   /// Handles an error emitted within this script.
   void _handleError(Object error, StackTrace trace) {
-    if (_exitCompleter.isCompleted) return;
+    if (_doneCompleter.isCompleted) return;
 
     if (error is ScriptException) {
       // If an internal script fails and the failure isn't handled, this script
       // will also fail with the same exit code.
-      _exitCompleter.completeError(ScriptException(name, error.exitCode));
+      _doneCompleter.completeError(ScriptException(name, error.exitCode));
     } else {
       // Otherwise, if this is an unexpected Dart error, print information about
       // it to stderr and exit with code 256. That code is higher than actual
@@ -346,7 +363,7 @@ class Script {
           "$error\n"
           "${Chain.forTrace(trace)}\n"));
       _extraStderrController.close();
-      _exitCompleter.completeError(
+      _doneCompleter.completeError(
           ScriptException(name, 256), StackTrace.current);
     }
 
