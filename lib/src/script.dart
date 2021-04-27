@@ -343,9 +343,7 @@ class Script {
             ScriptException(name, code), StackTrace.current);
       }
 
-      // Ignore any subscription cancellation errors, because they come from
-      // within the script and the script has exited.
-      _outputCloser.close().catchError((_) {});
+      _closeOutputStreams();
       _extraStderrController.close();
     }, onError: _handleError);
   }
@@ -371,6 +369,11 @@ class Script {
           ScriptException(name, 256), StackTrace.current);
     }
 
+    _closeOutputStreams();
+  }
+
+  /// Closes [stdout] and [stderr] if they aren't already closed.
+  void _closeOutputStreams() {
     // Only close the outputs after a macrotask so any last data has time to
     // propagate to its listeners.
     Timer.run(() {

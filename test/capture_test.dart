@@ -58,6 +58,14 @@ void main() {
         ]));
   });
 
+  test("forwards prints even if the capture closes synchronously", () {
+    expect(
+        Script.capture((_) async {
+          print("print");
+        }).stdout.lines,
+        emitsInOrder(["print", emitsDone]));
+  });
+
   test("forwards writes to currentStdout as stdout", () {
     expect(
         Script.capture((_) async {
