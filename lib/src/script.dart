@@ -52,6 +52,9 @@ import 'util.dart';
 ///   until a [Timer.run] event fires) to listen to [stdout] and [stderr]. After
 ///   that, they'll be forwarded to the surrounding [Stream.capture] (if one
 ///   exists) or to the root script's [stdout] and [stderr] streams.
+///
+/// * Passing error events to [stdin] is not allowed. If an error is passed,
+///   [stdin] wil close and forward the error to [stdin.done].
 @sealed
 class Script {
   /// A human-readable name of the script.
@@ -287,7 +290,7 @@ class Script {
 
     var script = Script._(
         name,
-        stdinCompleter.sink,
+        stdinCompleter.sink.rejectErrors(),
         stdout,
         stderr,
         Future.microtask(callback).then((components) {
