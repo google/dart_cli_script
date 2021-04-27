@@ -43,7 +43,9 @@ void main() {
     });
 
     test("is non-zero for a script that can't be found", () {
-      expect(Script("non-existent-executable").success, completion(isFalse));
+      var script = Script("non-existent-executable");
+      script.stderr.drain();
+      expect(script.success, completion(isFalse));
     });
   });
 
@@ -89,9 +91,13 @@ void stdoutOrStderr(String name, Stream<List<int>> stream(Script script)) {
     });
 
     test("closes for a script that fails to start", () {
-      var script = Script("non-existent-executable");
-      expect(script.done, throwsA(anything));
-      expect(stream(script), emitsThrough(emitsDone));
+      // Run in a capture block to ignore extra stderr from the process failing
+      // to start.
+      Script.capture((_) {
+        var script = Script("non-existent-executable");
+        expect(script.done, throwsA(anything));
+        expect(stream(script), emitsThrough(emitsDone));
+      }).stderr.drain();
     });
 
     test("emits non-text values", () {

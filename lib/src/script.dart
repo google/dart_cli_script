@@ -24,6 +24,8 @@ import 'package:stack_trace/stack_trace.dart';
 
 import 'exception.dart';
 import 'parse_args.dart';
+import 'stdio.dart';
+import 'stdio_group.dart';
 import 'util.dart';
 
 /// A unit of execution that behaves like a process, with [stdin], [stdout], and
@@ -185,12 +187,9 @@ class Script {
     return Script.fromComponents(name ?? "capture", () {
       var childScripts = FutureGroup<void>();
       var stdinController = StreamController<List<int>>();
-      var stdoutGroup = StreamGroup<List<int>>();
-      var extraStdoutController = StreamController<List<int>>();
-      var stderrGroup = StreamGroup<List<int>>();
+      var stdoutGroup = StdioGroup();
+      var stderrGroup = StdioGroup();
       var exitCodeCompleter = Completer<int>();
-
-      stdoutGroup.add(extraStdoutController.stream);
 
       runZonedGuarded(
           () async {
@@ -200,7 +199,6 @@ class Script {
             // this script as done.
             void checkIdle() {
               if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
-                extraStdoutController.close();
                 stdoutGroup.close();
                 stderrGroup.close();
                 childScripts.close();
@@ -213,7 +211,6 @@ class Script {
           },
           (error, stackTrace) {
             if (!exitCodeCompleter.isCompleted) {
-              extraStdoutController.close();
               stdoutGroup.close();
               stderrGroup.close();
               childScripts.close();
@@ -222,12 +219,16 @@ class Script {
           },
           zoneValues: {
             #_childScripts: childScripts,
-            #_stdoutGroup: stdoutGroup,
-            #_stderrGroup: stderrGroup
+            stdoutKey: stdoutGroup,
+            stderrKey: stderrGroup
           },
           zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
             if (!exitCodeCompleter.isCompleted) {
-              extraStdoutController.add(utf8.encode("$line\n"));
+              // Add a separate stream rather than using [stdoutGroup.sink] so
+              // that prints will go through even if the user has put the sink
+              // in a weird state by calling [StreamSink.close] or
+              // [StreamSink.addStream].
+              stdoutGroup.add(Stream.value(utf8.encode("$line\n")));
             }
           }));
 
@@ -271,21 +272,6 @@ class Script {
     var stderrCompleter = StreamCompleter<List<int>>();
     var stderr = stderrCompleter.stream.onListen(() => stderrListened = true);
 
-    // Forward streams after a macrotask elapses to give the user time to start
-    // listening. *Don't* wait until the process starts because that'll take a
-    // non-deterministic amount of time, and we want to guarantee as best as
-    // possible that if the user adds a listener too late it will fail
-    // consistently rather than flakily.
-    Timer.run(() {
-      if (!stdoutListened) {
-        _pipeUnlistenedStream(stdout, #_stdoutGroup, io.stdout);
-      }
-
-      if (!stderrListened) {
-        _pipeUnlistenedStream(stderr, #_stderrGroup, io.stderr);
-      }
-    });
-
     var stdinCompleter = StreamSinkCompleter<List<int>>();
 
     var script = Script._(
@@ -300,18 +286,33 @@ class Script {
           return components.exitCode;
         }));
 
+    // Forward streams after a macrotask elapses to give the user time to start
+    // listening. *Don't* wait until the process starts because that'll take a
+    // non-deterministic amount of time, and we want to guarantee as best as
+    // possible that if the user adds a listener too late it will fail
+    // consistently rather than flakily.
+    Timer.run(() {
+      if (!stdoutListened) {
+        _pipeUnlistenedStream(script.stdout, stdoutKey, io.stdout);
+      }
+
+      if (!stderrListened) {
+        _pipeUnlistenedStream(script.stderr, stderrKey, io.stderr);
+      }
+    });
+
     if (childScripts is FutureGroup<void>) {
       childScripts.add(script._doneWithoutError);
     }
     return script;
   }
 
-  /// Pipes [stream]'s events to a [StreamGroup] named [groupSymbol] in the
-  /// current zone if it exists, or else to [defaultConsumer] if it doesn't.
-  static void _pipeUnlistenedStream(Stream<List<int>> stream,
-      Symbol groupSymbol, Sink<List<int>> defaultConsumer) {
-    var group = Zone.current[groupSymbol];
-    if (group is StreamGroup<List<int>>) {
+  /// Pipes [stream]'s events to a [StdioGroup] indexed by [key] in the current
+  /// zone if it exists, or else to [defaultConsumer] if it doesn't.
+  static void _pipeUnlistenedStream(
+      Stream<List<int>> stream, Object key, Sink<List<int>> defaultConsumer) {
+    var group = Zone.current[key];
+    if (group is StdioGroup) {
       group.add(stream);
     } else {
       stream.listen(defaultConsumer.add);
