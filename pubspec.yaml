@@ -18,4 +18,6 @@ dev_dependencies:
 
 dependency_overrides:
   async:
-    git: {url: git://github.com/dart-lang/async}
+    git:
+      url: git://github.com/dart-lang/async
+      ref: stream-group-listen-error

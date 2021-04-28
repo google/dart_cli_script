@@ -15,7 +15,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:test/test.dart';
 
 import 'package:cli_script/cli_script.dart';
