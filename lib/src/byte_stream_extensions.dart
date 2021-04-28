@@ -29,6 +29,7 @@ extension ByteStreamExtensions on Stream<List<int>> {
     var i = text.length - 1;
     while (i >= 0 && text.codeUnitAt(i) == $lf) {
       i--;
+      if (i >= 0 && text.codeUnitAt(i) == $cr) i--;
     }
 
     return text.substring(0, i + 1);

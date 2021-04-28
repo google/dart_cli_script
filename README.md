@@ -184,10 +184,10 @@ recommend the [`args`] package)*
 
 All `cli_script` functions that spawn subprocesses accept arguments in the same
 format: a string named `executableAndArgs` along with a named `List<String>`
-parameter named `args`. This makes it easy to invoke commands simple commands
-with very little boilerplate (`lines("find . -type f -name '*.dart'")`) *and*
-easy to pass in dynamically-generated arguments without worrying whether they
-contain spaces (`run("cp -r", args: [source, destination])`).
+parameter named `args`. This makes it easy to invoke simple commands with very
+little boilerplate (`lines("find . -type f -name '*.dart'")`) *and* easy to pass
+in dynamically-generated arguments without worrying whether they contain spaces
+(`run("cp -r", args: [source, destination])`).
 
 The `executableAndArgs` string is parsed as a space-separated string. Components
 can also be surrounded by single quotes or double quotes, which will allow them
