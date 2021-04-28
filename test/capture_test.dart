@@ -132,7 +132,7 @@ void main() {
     });
 
     test("doesn't complete until the body completes", () async {
-      var completer = Completer();
+      var completer = Completer<void>();
 
       var doneComplete = false;
       Script.capture((_) => completer.future).done.then((_) {
@@ -149,7 +149,7 @@ void main() {
 
     test("doesn't complete until all child scripts complete", () async {
       var stdinCompleter = Completer<IOSink>();
-      var childDoneCompleter = Completer();
+      var childDoneCompleter = Completer<void>();
       var doneComplete = false;
       Script.capture((_) {
         // Run an extra script just to make totally sure there's a lot of time
@@ -174,8 +174,8 @@ void main() {
         "done", () async {
       expect(
           Script.capture((_) {
-            Future.error("oh no");
-            return Completer().future;
+            Future<void>.error("oh no");
+            return Completer<void>().future;
           }).exitCode,
           completion(equals(256)));
     });
@@ -205,8 +205,8 @@ void main() {
     });
 
     test("spawning a child script throws an error", () {
-      var childSpawnedCompleter = Completer();
-      var captureDoneCompleter = Completer();
+      var childSpawnedCompleter = Completer<void>();
+      var captureDoneCompleter = Completer<void>();
       captureDoneCompleter.complete(Script.capture((_) {
         captureDoneCompleter.future.then((_) {
           try {
@@ -222,7 +222,7 @@ void main() {
     });
 
     test("additional errors are swallowed", () async {
-      var captureDoneCompleter = Completer();
+      var captureDoneCompleter = Completer<void>();
       captureDoneCompleter.complete(Script.capture((_) async {
         await captureDoneCompleter.future;
         throw "oh no";

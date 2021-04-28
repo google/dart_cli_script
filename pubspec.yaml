@@ -13,6 +13,8 @@ dependencies:
   string_scanner: ^1.1.0
 
 dev_dependencies:
+  sass_analysis:
+    git: {url: git://github.com/sass/dart-sass, path: analysis}
   test: ^1.16.8
   test_descriptor: ^2.0.0
 

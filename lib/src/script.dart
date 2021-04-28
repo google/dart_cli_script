@@ -82,7 +82,7 @@ class Script {
   ///
   /// See also [success], which should be preferred when simply checking whether
   /// the script has succeeded.
-  Future<int> get exitCode => done.then((_) => 0, onError: (error, stackTrace) {
+  Future<int> get exitCode => done.then((_) => 0, onError: (Object error, _) {
         if (error is! ScriptException) throw error;
         return error.exitCode;
       });
@@ -111,7 +111,7 @@ class Script {
 
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
-  var _outputCloser = StreamCloser<List<int>>();
+  final _outputCloser = StreamCloser<List<int>>();
 
   /// Creates a [Script] that runs a subprocess.
   ///
