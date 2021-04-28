@@ -16,11 +16,16 @@ import 'dart:io';
 
 import 'package:async/async.dart';
 
-import 'src/byte_stream_extensions.dart';
+import 'src/extensions/byte_stream.dart';
 import 'src/script.dart';
 import 'src/util.dart';
 
-export 'src/byte_stream_extensions.dart';
+export 'src/extensions/byte_list.dart';
+export 'src/extensions/byte_stream.dart';
+export 'src/extensions/chunk_list.dart';
+export 'src/extensions/line_list.dart';
+export 'src/extensions/line_stream.dart';
+export 'src/extensions/string.dart';
 export 'src/exception.dart';
 export 'src/parse_args.dart' show arg;
 export 'src/script.dart';

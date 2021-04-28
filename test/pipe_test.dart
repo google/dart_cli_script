@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:test/test.dart';
 
@@ -274,6 +275,65 @@ void main() {
         // Give time for an unhandled error to be top-leveled.
         await pumpEventQueue();
       });
+    });
+  });
+
+  group("pipes in", () {
+    group("a byte stream", () {
+      test("without errors", () {
+        var pipeline =
+            Stream.fromIterable([utf8.encode("foo"), utf8.encode("bar")]) |
+                mainScript("stdin.pipe(stdout);");
+        expect(pipeline.stdout.lines, emitsInOrder(["foobar", emitsDone]));
+      });
+
+      test("with an error", () {
+        var capture = Script.capture((_) {
+          var pipeline = Stream<List<int>>.error("oh no") | mainScript("");
+          expect(pipeline.exitCode, completion(equals(256)));
+        });
+
+        expect(capture.stderr.lines, emitsThrough(contains("oh no")));
+        expect(capture.done, completes);
+      });
+    });
+
+    group("a string stream", () {
+      test("without errors", () {
+        var pipeline = Stream.fromIterable(["foo", "bar"]) |
+            mainScript("stdin.pipe(stdout);");
+        expect(pipeline.stdout.lines, emitsInOrder(["foo", "bar", emitsDone]));
+      });
+
+      test("with an error", () {
+        var capture = Script.capture((_) {
+          var pipeline = Stream<String>.error("oh no") | mainScript("");
+          expect(pipeline.exitCode, completion(equals(256)));
+        });
+
+        expect(capture.stderr.lines, emitsThrough(contains("oh no")));
+      });
+    });
+
+    test("a chunk list", () {
+      var pipeline = [utf8.encode("foo"), utf8.encode("bar")] |
+          mainScript("stdin.pipe(stdout);");
+      expect(pipeline.stdout.lines, emitsInOrder(["foobar", emitsDone]));
+    });
+
+    test("a byte list", () {
+      var pipeline = utf8.encode("foobar") | mainScript("stdin.pipe(stdout);");
+      expect(pipeline.stdout.lines, emitsInOrder(["foobar", emitsDone]));
+    });
+
+    test("a string list", () {
+      var pipeline = ["foo", "bar"] | mainScript("stdin.pipe(stdout);");
+      expect(pipeline.stdout.lines, emitsInOrder(["foo", "bar", emitsDone]));
+    });
+
+    test("a string", () {
+      var pipeline = "foobar" | mainScript("stdin.pipe(stdout);");
+      expect(pipeline.stdout.lines, emitsInOrder(["foobar", emitsDone]));
     });
   });
 }

@@ -170,6 +170,31 @@ Future<void> main() async {
 }
 ```
 
+In addition to piping scripts together, you can pipe the following types into
+scripts:
+
+* `Stream<List<int>>` (a stream of chunked binary data)
+* `Stream<String>` (a stream of lines of text)
+* `List<List<int>>` (chunked binary data)
+* `List<int>` (a single binary blob)
+* `List<String>` (lines of text)
+* `String` (a single text blob)
+
+This makes it easy to pass standard Dart data into process, such as files:
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var pipeline = File("names.txt").openRead() |
+      Script("grep Natalie") |
+      Script("wc -l");
+  print("There are ${await pipeline.stdout.text} Natalies");
+}
+```
+
 ### Composability
 
 In shell scripts, everything is a process. Obviously child processes are
