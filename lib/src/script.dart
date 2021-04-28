@@ -129,7 +129,7 @@ class Script {
       bool includeParentEnvironment = true}) {
     var parsedExecutableAndArgs = parseArgs(executableAndArgs);
 
-    return Script.fromComponents(p.basename(parsedExecutableAndArgs[0]),
+    return Script.fromComponents(name ?? p.basename(parsedExecutableAndArgs[0]),
         () async {
       var process = await Process.start(parsedExecutableAndArgs[0],
           [...parsedExecutableAndArgs.skip(1), ...?args],
@@ -254,7 +254,7 @@ class Script {
     // handlers for stdout and stderr.
     var childScripts = Zone.current[#_childScripts];
     if (childScripts is FutureGroup<void> && childScripts.isClosed) {
-      // The FutureGrop is closed, indicating that the surrounding capture group
+      // The FutureGroup is closed, indicating that the surrounding capture group
       // has already exited.
       throw StateError("Can't create a Script within a Script.capture() block "
           "that already exited.");

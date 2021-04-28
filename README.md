@@ -61,7 +61,7 @@ Similarly, it's easy to get the output of a command just like you would using
 [`lines()`] to get a stream of lines:
 
 [`output()`]: https://pub.dev/documentation/cli_script/latest/cli_script/output.html
-[`lines()`]: https://pub.dev/documentation/cli_script/latest/cli_script/output.html
+[`lines()`]: https://pub.dev/documentation/cli_script/latest/cli_script/lines.html
 
 ```dart
 import 'package:cli_script/cli_script.dart';
