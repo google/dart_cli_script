@@ -20,7 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu, macos, windows]
+        # TODO: Run tests on Windows when dart-lang/pub#2982 is fixed.
+        os: [ubuntu, macos]
         dart-channel: [stable, dev]
       fail-fast: false
 
