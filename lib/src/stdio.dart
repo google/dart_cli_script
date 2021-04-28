@@ -48,3 +48,39 @@ IOSink get currentStderr {
   var fromZone = Zone.current[stderrKey];
   return fromZone is StdioGroup ? fromZone.sink : stderr;
 }
+
+/// Runs [callback] and silences all stdout emitted by [Script]s or calls to
+/// [print] within it.
+///
+/// Returns the same result as [callback]. Doesn't add any special error
+/// handling.
+T silenceStdout<T>(T callback()) {
+  var group = StdioGroup();
+  group.stream.drain();
+  return runZoned(callback,
+      zoneValues: {stdoutKey: group},
+      zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}));
+}
+
+/// Runs [callback] and silences all stderr emitted by [Script]s.
+///
+/// Returns the same result as [callback]. Doesn't add any special error
+/// handling.
+T silenceStderr<T>(T callback()) {
+  var group = StdioGroup();
+  group.stream.drain();
+  return runZoned(callback, zoneValues: {stderrKey: group});
+}
+
+/// Runs [callback] and silences all stdout and stderr emitted by [Script]s or
+/// calls to [print] within it.
+///
+/// Returns the same result as [callback]. Doesn't add any special error
+/// handling.
+T silenceOutput<T>(T callback()) {
+  var group = StdioGroup();
+  group.stream.drain();
+  return runZoned(callback,
+      zoneValues: {stdoutKey: group, stderrKey: group},
+      zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}));
+}
