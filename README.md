@@ -130,7 +130,45 @@ code unless the [`exitCode`] or [`success`] fields are accessed.
 
 ### Pipelining
 
-TODO: add pipelining
+In shell scripts, it's easy to hook multiple processes together in a pipeline
+where each one passes its output to the next. `cli_script` supports this to,
+using the [`|` operator]. This pipes all stdout from one script into another
+script's stdin and returns a new script that encapsulates both. This new script
+works just like a Bash pipeline with `set -o pipefail`: it forwards the last
+script's stdout and stderr, but it'll fail if *any* script in the pipeline
+fails.
+
+[`|` operator]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/operator_bitwise_or.html
+
+```dart
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var pipeline = Script("find -name *.dart") |
+      Script("xargs grep waitFor") |
+      Script("wc -l");
+  print("${await pipeline.stdout.text} instances of waitFor");
+}
+```
+
+Depending on how you're using a pipeline, you may find it more convenient to use
+the [`Script.pipeline`] constructor. This works just like the `|` operator, it
+just uses a different syntax.
+
+[`Script.pipeline`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/pipeline.html
+
+```dart
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var count = await Script.pipeline([
+    Script("find -name *.dart"),
+    Script("xargs grep waitFor"),
+    Script("wc -l")
+  ]).stdout.text;
+  print("$count instances of waitFor");
+}
+```
 
 ### Composability
 

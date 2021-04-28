@@ -237,6 +237,47 @@ class Script {
     });
   }
 
+  /// Pipes each script's [stdout] into the next script's [stdin].
+  ///
+  /// Returns a new [Script] whose [stdin] comes from the first script's, and
+  /// whose [stdout] and [stderr] come from the last script's.
+  ///
+  /// This behaves like a Bash pipeline with `set -o pipefail`: if any script
+  /// exits with a non-zero exit code, the returned script will fail, but it
+  /// will only exit once *all* component scripts have exited. If multiple
+  /// scripts exit with errors, the last non-zero exit code will be returned.
+  ///
+  /// This doesn't add any special handling for any script's [stderr] except for
+  /// the last one.
+  ///
+  /// See also [operator |], which provides a syntax for creating pipelines two
+  /// scripts at a time.
+  factory Script.pipeline(Iterable<Script> scripts, {String? name}) {
+    var list = scripts.toList();
+    if (list.isEmpty) {
+      throw ArgumentError.value(list, "script", "May not be empty");
+    } else if (list.length == 1) {
+      return list.first;
+    }
+
+    return Script.fromComponents(
+        name ?? list.map((script) => script.name).join(" | "), () {
+      for (var i = 0; i < list.length - 1; i++) {
+        list[i].stdout.pipe(list[i + 1].stdin);
+      }
+
+      return ScriptComponents(
+          list.first.stdin,
+          // Wrap the final script's stdout and stderr in [SubscriptionStream]s
+          // so that the inner scripts will see that someone's listening and not
+          // try to top-level the streams' output.
+          SubscriptionStream(list.last.stdout.listen(null)),
+          SubscriptionStream(list.last.stderr.listen(null)),
+          Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
+              exitCodes.lastWhere((code) => code != 0, orElse: () => 0)));
+    });
+  }
+
   /// Creates a script from existing [stdin], [stdout], [stderr], and [exitCode]
   /// objects encapsulated in a [ScriptComponents].
   ///
@@ -279,7 +320,7 @@ class Script {
         stdinCompleter.sink.rejectErrors(),
         stdout,
         stderr,
-        Future.microtask(callback).then((components) {
+        Future.sync(callback).then((components) {
           stdinCompleter.setDestinationSink(components.stdin);
           stdoutCompleter.setSourceStream(components.stdout);
           stderrCompleter.setSourceStream(components.stderr);
@@ -386,6 +427,22 @@ class Script {
   /// Returns a stream that combines both [stdout] and [stderr] the same way
   /// they'd be displayed in a terminal.
   Stream<List<int>> combineOutput() => StreamGroup.merge([stdout, stderr]);
+
+  /// Pipes this script's [stdout] into [other]'s [stdin].
+  ///
+  /// Returns a new [Script] whose [stdin] comes from [this] and whose [stdout]
+  /// and [stderr] come from [other].
+  ///
+  /// This behaves like a Bash pipeline with `set -o pipefail`: if either [this]
+  /// or [other] exits with a non-zero exit code, the returned script will fail,
+  /// but it will only exit once *both* component scripts have exited. If both
+  /// exit with errors, [other]'s exit code will be used.
+  ///
+  /// This doesn't add any special handling for [this]'s [stderr].
+  ///
+  /// See also [pipe], which provides a syntax for creating a pipeline with many
+  /// scripts at once.
+  Script operator |(Script other) => Script.pipeline([this, other]);
 }
 
 /// A struct containing the components needed to create a [Script].
