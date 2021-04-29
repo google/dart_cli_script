@@ -28,10 +28,17 @@ Here's an example of a simple Hello World script:
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  await run('echo "Hello, world!");
+void main() {
+  wrapMain(() async {
+    await run('echo "Hello, world!");
+  });
 }
 ```
+
+(Note that [`wrapMain()`] isn't strictly necessary here, but it handles errors
+much more nicely than Dart's built-in handling!)
+
+[`wrapMain()`]: https://pub.dev/documentation/cli_script/latest/cli_script/wrapMain.html
 
 Many programming environments have tried to make themselves suitable for shell
 scripting, but in the end they all fall far short of the ease of calling out to
@@ -50,9 +57,11 @@ process is as simple as calling [`run()`]:
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  await run("mkdir -p path/to/dir");
-  await run("touch path/to/dir/foo");
+void main() {
+  wrapMain(() async {
+    await run("mkdir -p path/to/dir");
+    await run("touch path/to/dir/foo");
+  });
 }
 ```
 
@@ -66,11 +75,13 @@ Similarly, it's easy to get the output of a command just like you would using
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  await for (var file in lines("find . -type f -maxdepth 1")) {
-    var contents = await output("cat", args: [file]);
-    if (contents.contains("needle")) print(file);
-  }
+void main() {
+  wrapMain(() async {
+    await for (var file in lines("find . -type f -maxdepth 1")) {
+      var contents = await output("cat", args: [file]);
+      if (contents.contains("needle")) print(file);
+    }
+  });
 }
 ```
 
@@ -82,10 +93,12 @@ not:
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  await for (var file in lines("find . -type f -maxdepth 1")) {
-    if (await check("grep -q needle", args: [file])) print(file);
-  }
+void main() {
+  wrapMain(() async {
+    await for (var file in lines("find . -type f -maxdepth 1")) {
+      if (await check("grep -q needle", args: [file])) print(file);
+    }
+  });
 }
 ```
 
@@ -143,11 +156,13 @@ fails.
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  var pipeline = Script("find -name *.dart") |
-      Script("xargs grep waitFor") |
-      Script("wc -l");
-  print("${await pipeline.stdout.text} instances of waitFor");
+void main() {
+  wrapMain(() async {
+    var pipeline = Script("find -name *.dart") |
+        Script("xargs grep waitFor") |
+        Script("wc -l");
+    print("${await pipeline.stdout.text} instances of waitFor");
+  });
 }
 ```
 
@@ -160,13 +175,15 @@ just uses a different syntax.
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  var count = await Script.pipeline([
-    Script("find -name *.dart"),
-    Script("xargs grep waitFor"),
-    Script("wc -l")
-  ]).stdout.text;
-  print("$count instances of waitFor");
+void main() {
+  wrapMain(() async {
+    var count = await Script.pipeline([
+      Script("find -name *.dart"),
+      Script("xargs grep waitFor"),
+      Script("wc -l")
+    ]).stdout.text;
+    print("$count instances of waitFor");
+  });
 }
 ```
 
@@ -187,11 +204,13 @@ import 'dart:io';
 
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  var pipeline = File("names.txt").openRead() |
-      Script("grep Natalie") |
-      Script("wc -l");
-  print("There are ${await pipeline.stdout.text} Natalies");
+void main() {
+  wrapMain(() async {
+    var pipeline = File("names.txt").openRead() |
+        Script("grep Natalie") |
+        Script("wc -l");
+    print("There are ${await pipeline.stdout.text} Natalies");
+  });
 }
 ```
 
@@ -207,12 +226,14 @@ import 'dart:io';
 import 'package:cli_script/cli_script.dart';
 
 void main() {
-  Script.capture((_) async {
-    await for (var file in lines("find . -type f -maxdepth 1")) {
-      var contents = await output("cat", args: [file]);
-      if (contents.contains("needle")) print(file);
-    }
-  }) > File("needles.txt").openWrite();
+  wrapMain(() {
+    Script.capture((_) async {
+      await for (var file in lines("find . -type f -maxdepth 1")) {
+        var contents = await output("cat", args: [file]);
+        if (contents.contains("needle")) print(file);
+      }
+    }) > File("needles.txt").openWrite();
+  });
 }
 ```
 
@@ -234,15 +255,17 @@ child scripts (or calls to `print()`) into that `Script`'s [`stdout`] and
 ```dart
 import 'package:cli_script/cli_script.dart';
 
-Future<void> main() async {
-  var script = Script.capture((_) async {
-    await run("find . -type f -maxdepth 1");
-    print("subdir/extra-file");
-  });
+void main() {
+  wrapMain(() async {
+    var script = Script.capture((_) async {
+      await run("find . -type f -maxdepth 1");
+      print("subdir/extra-file");
+    });
 
-  await for (var file in script.stdout.lines) {
-    if (await check("grep -q needle", args: [file])) print(file);
-  }
+    await for (var file in script.stdout.lines) {
+      if (await check("grep -q needle", args: [file])) print(file);
+    }
+  });
 }
 ```
 

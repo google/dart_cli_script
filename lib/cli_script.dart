@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:stack_trace/stack_trace.dart';
 
+import 'src/exception.dart';
 import 'src/extensions/byte_stream.dart';
 import 'src/script.dart';
 import 'src/util.dart';
@@ -30,6 +33,54 @@ export 'src/exception.dart';
 export 'src/parse_args.dart' show arg;
 export 'src/script.dart';
 export 'src/stdio.dart' hide stdoutKey, stderrKey;
+
+/// The packages whose stack frames should be folded by [wrapMain].
+const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
+
+/// A wrapper for the body of the top-level `main()` method.
+///
+/// It's recommended that all scripts wrap their `main()` methods in this
+/// function. It gracefully exits when an error is unhandled, and (if
+/// [chainStackTraces] is `true`) tracks stack traces across asynchronous calls
+/// to produce better error stacks.
+///
+/// By default, if a [Script] fails in [callback], this just exits with that
+/// script's exit code without printing any additional error messages. If
+/// [printScriptException] is `true`, this will print the exception and its
+/// stack trace to stderr before exiting.
+///
+/// By default, stack frames from the Dart core libraries and from this package
+/// will be folded together to make stack traces more readable. If
+/// [verboseTrace] is `true`, the full stack traces will be printed instead.
+void wrapMain(FutureOr<void> callback(),
+    {bool chainStackTraces = true,
+    bool printScriptException = false,
+    bool verboseTrace = false}) {
+  Chain.capture(callback, onError: (error, chain) {
+    if (!verboseTrace) {
+      chain = chain.foldFrames(
+          (frame) => _packagesToFold.contains(frame.package),
+          terse: true);
+    }
+
+    if (error is! ScriptException) {
+      stderr.writeln(error);
+      stderr.writeln(chain);
+      exit(254);
+    }
+
+    // If a script failed, wait a macrotask before exiting so that its stderr
+    // has a chance to be piped through to the top level.
+    Timer.run(() {
+      if (printScriptException) {
+        stderr.writeln(error);
+        stderr.writeln(chain);
+      }
+
+      exit(error.exitCode);
+    });
+  }, when: chainStackTraces);
+}
 
 /// Runs an executable for its side effects.
 ///
