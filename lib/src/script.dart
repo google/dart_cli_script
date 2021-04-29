@@ -306,15 +306,9 @@ class Script {
   /// authors are expected to primarily use [Script] and [Script.capture].
   factory Script.fromComponents(
       String name, FutureOr<ScriptComponents> callback()) {
-    // Run the script after a macrotask elapses, to give the user time to set up
-    // handlers for stdout and stderr.
-    var childScripts = Zone.current[#_childScripts];
-    if (childScripts is FutureGroup<void> && childScripts.isClosed) {
-      // The FutureGroup is closed, indicating that the surrounding capture group
-      // has already exited.
-      throw StateError("Can't create a Script within a Script.capture() block "
-          "that already exited.");
-    }
+    // Eagerly throw an error if the surrounding [Script.capture] has closed, so
+    // that we don't do any of the work in [callback] if it is.
+    _childScripts;
 
     // TODO: there are too few guarantees about when a stream will actually get
     // listened. Even piping it doesn't immediately listen. I think we need to
@@ -327,7 +321,7 @@ class Script {
 
     var stdinCompleter = StreamSinkCompleter<List<int>>();
 
-    var script = Script._(
+    return Script._(
         name,
         stdinCompleter.sink.rejectErrors(),
         stdout,
@@ -338,26 +332,6 @@ class Script {
           stderrCompleter.setSourceStream(components.stderr);
           return components.exitCode;
         }));
-
-    // Forward streams after a macrotask elapses to give the user time to start
-    // listening. *Don't* wait until the process starts because that'll take a
-    // non-deterministic amount of time, and we want to guarantee as best as
-    // possible that if the user adds a listener too late it will fail
-    // consistently rather than flakily.
-    Timer.run(() {
-      if (!script._stdoutAccessed) {
-        _pipeUnlistenedStream(script.stdout, stdoutKey, io.stdout);
-      }
-
-      if (!script._stderrAccessed) {
-        _pipeUnlistenedStream(script.stderr, stderrKey, io.stderr);
-      }
-    });
-
-    if (childScripts is FutureGroup<void>) {
-      childScripts.add(script._doneWithoutError);
-    }
-    return script;
   }
 
   /// Pipes [stream]'s events to a [StdioGroup] indexed by [key] in the current
@@ -399,6 +373,43 @@ class Script {
       _closeOutputStreams();
       _extraStderrController.close();
     }, onError: _handleError);
+
+    // Forward streams after a macrotask elapses to give the user time to start
+    // listening. *Don't* wait until the process starts because that'll take a
+    // non-deterministic amount of time, and we want to guarantee as best as
+    // possible that if the user adds a listener too late it will fail
+    // consistently rather than flakily.
+    Timer.run(() {
+      if (!_stdoutAccessed) {
+        _pipeUnlistenedStream(this.stdout, stdoutKey, io.stdout);
+      }
+
+      if (!_stderrAccessed) {
+        _pipeUnlistenedStream(this.stderr, stderrKey, io.stderr);
+      }
+    });
+
+    _childScripts?.add(_doneWithoutError);
+  }
+
+  /// Returns the current [Script.capture] block's [FutureGroup] that tracks
+  /// when its child scripts are completed, or `null` if we're not in a
+  /// [Script.capture].
+  ///
+  /// Throws a [StateError] if the surrounding [Script.capture] has already
+  /// closed.
+  static FutureGroup<void>? get _childScripts {
+    var childScripts = Zone.current[#_childScripts];
+    if (childScripts is! FutureGroup<void>) return null;
+
+    if (childScripts.isClosed) {
+      // The FutureGroup is closed, indicating that the surrounding capture
+      // group has already exited.
+      throw StateError("Can't create a Script within a Script.capture() block "
+          "that already exited.");
+    }
+
+    return childScripts;
   }
 
   /// Handles an error emitted within this script.
