@@ -195,57 +195,57 @@ class Script {
   factory Script.capture(
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
       {String? name}) {
-    return Script.fromComponents(name ?? "capture", () {
-      var childScripts = FutureGroup<void>();
-      var stdinController = StreamController<List<int>>();
-      var stdoutGroup = StdioGroup();
-      var stderrGroup = StdioGroup();
-      var exitCodeCompleter = Completer<int>();
+    _checkCapture();
 
-      runZonedGuarded(
-          () async {
-            await callback(stdinController.stream);
+    var childScripts = FutureGroup<void>();
+    var stdinController = StreamController<List<int>>();
+    var stdoutGroup = StdioGroup();
+    var stderrGroup = StdioGroup();
+    var exitCodeCompleter = Completer<int>();
 
-            // Once there are no child scripts still spawning or running, mark
-            // this script as done.
-            void checkIdle() {
-              if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
-                stdoutGroup.close();
-                stderrGroup.close();
-                childScripts.close();
-                exitCodeCompleter.complete(0);
-              }
-            }
+    runZonedGuarded(
+        () async {
+          await callback(stdinController.stream);
 
-            checkIdle();
-            childScripts.onIdle.listen((_) => Timer.run(checkIdle));
-          },
-          (error, stackTrace) {
-            if (!exitCodeCompleter.isCompleted) {
+          // Once there are no child scripts still spawning or running, mark
+          // this script as done.
+          void checkIdle() {
+            if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
               stdoutGroup.close();
               stderrGroup.close();
               childScripts.close();
-              exitCodeCompleter.completeError(error, stackTrace);
+              exitCodeCompleter.complete(0);
             }
-          },
-          zoneValues: {
-            #_childScripts: childScripts,
-            stdoutKey: stdoutGroup,
-            stderrKey: stderrGroup
-          },
-          zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
-            if (!exitCodeCompleter.isCompleted) {
-              // Add a separate stream rather than using [stdoutGroup.sink] so
-              // that prints will go through even if the user has put the sink
-              // in a weird state by calling [StreamSink.close] or
-              // [StreamSink.addStream].
-              stdoutGroup.add(Stream.value(utf8.encode("$line\n")));
-            }
-          }));
+          }
 
-      return ScriptComponents(stdinController.sink, stdoutGroup.stream,
-          stderrGroup.stream, exitCodeCompleter.future);
-    });
+          checkIdle();
+          childScripts.onIdle.listen((_) => Timer.run(checkIdle));
+        },
+        (error, stackTrace) {
+          if (!exitCodeCompleter.isCompleted) {
+            stdoutGroup.close();
+            stderrGroup.close();
+            childScripts.close();
+            exitCodeCompleter.completeError(error, stackTrace);
+          }
+        },
+        zoneValues: {
+          #_childScripts: childScripts,
+          stdoutKey: stdoutGroup,
+          stderrKey: stderrGroup
+        },
+        zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
+          if (!exitCodeCompleter.isCompleted) {
+            // Add a separate stream rather than using [stdoutGroup.sink] so
+            // that prints will go through even if the user has put the sink
+            // in a weird state by calling [StreamSink.close] or
+            // [StreamSink.addStream].
+            stdoutGroup.add(Stream.value(utf8.encode("$line\n")));
+          }
+        }));
+
+    return Script._(name ?? "capture", stdinController.sink, stdoutGroup.stream,
+        stderrGroup.stream, exitCodeCompleter.future);
   }
 
   /// Pipes each script's [stdout] into the next script's [stdin].
@@ -264,6 +264,8 @@ class Script {
   /// See also [operator |], which provides a syntax for creating pipelines two
   /// scripts at a time.
   factory Script.pipeline(Iterable<Script> scripts, {String? name}) {
+    _checkCapture();
+
     var list = scripts.toList();
     if (list.isEmpty) {
       throw ArgumentError.value(list, "script", "May not be empty");
@@ -271,22 +273,20 @@ class Script {
       return list.first;
     }
 
-    return Script.fromComponents(
-        name ?? list.map((script) => script.name).join(" | "), () {
-      for (var i = 0; i < list.length - 1; i++) {
-        list[i].stdout.pipe(list[i + 1].stdin);
-      }
+    for (var i = 0; i < list.length - 1; i++) {
+      list[i].stdout.pipe(list[i + 1].stdin);
+    }
 
-      return ScriptComponents(
-          list.first.stdin,
-          // Wrap the final script's stdout and stderr in [SubscriptionStream]s
-          // so that the inner scripts will see that someone's listening and not
-          // try to top-level the streams' output.
-          SubscriptionStream(list.last.stdout.listen(null)),
-          SubscriptionStream(list.last.stderr.listen(null)),
-          Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
-              exitCodes.lastWhere((code) => code != 0, orElse: () => 0)));
-    });
+    return Script._(
+        name ?? list.map((script) => script.name).join(" | "),
+        list.first.stdin,
+        // Wrap the final script's stdout and stderr in [SubscriptionStream]s so
+        // that the inner scripts will see that someone's listening and not try
+        // to top-level the streams' output.
+        SubscriptionStream(list.last.stdout.listen(null)),
+        SubscriptionStream(list.last.stderr.listen(null)),
+        Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
+            exitCodes.lastWhere((code) => code != 0, orElse: () => 0)));
   }
 
   /// Creates a script from existing [stdin], [stdout], [stderr], and [exitCode]
@@ -306,9 +306,7 @@ class Script {
   /// authors are expected to primarily use [Script] and [Script.capture].
   factory Script.fromComponents(
       String name, FutureOr<ScriptComponents> callback()) {
-    // Eagerly throw an error if the surrounding [Script.capture] has closed, so
-    // that we don't do any of the work in [callback] if it is.
-    _childScripts;
+    _checkCapture();
 
     // TODO: there are too few guarantees about when a stream will actually get
     // listened. Even piping it doesn't immediately listen. I think we need to
@@ -390,6 +388,12 @@ class Script {
     });
 
     _childScripts?.add(_doneWithoutError);
+  }
+
+  /// Throws a [StateError] if this is running in a closed [Script.capture]
+  /// block.
+  static void _checkCapture() {
+    _childScripts;
   }
 
   /// Returns the current [Script.capture] block's [FutureGroup] that tracks
