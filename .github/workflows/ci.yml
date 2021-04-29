@@ -1,0 +1,50 @@
+name: CI
+on:
+  push: {branches: [master]}
+  pull_request:
+
+jobs:
+  analyze:
+    name: "Static analysis"
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dart-lang/setup-dart@v1
+    - run: dart --version
+    - run: pub get
+    - run: dartanalyzer --fatal-infos --fatal-warnings .
+
+  test:
+    name: "Tests | Dart ${{ matrix.dart-channel }} | ${{ matrix.os }}"
+
+    strategy:
+      matrix:
+        # TODO: Run tests on Windows when dart-lang/pub#2982 is fixed.
+        os: [ubuntu, macos]
+        dart-channel: [stable, dev]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+
+    - uses: dart-lang/setup-dart@v1
+      with:
+        sdk: ${{ matrix.dart-channel }}
+    - run: dart --version
+
+    - run: pub get
+    - run: pub run test -r expanded
+
+  format:
+    name: "Code formatting"
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dart-lang/setup-dart@v1
+    - run: dart --version
+    - run: dart format --fix .
+    - run: git diff --exit-code
