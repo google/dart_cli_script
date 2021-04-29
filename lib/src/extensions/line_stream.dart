@@ -31,4 +31,8 @@ extension LineStreamExtensions on Stream<String> {
   /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
   /// and the virtual stream process exits with error code 256.
   Script operator |(Script script) => bytes | script;
+
+  /// Shorthand for `stream.bytes.pipe`.
+  Future<void> operator >(StreamConsumer<List<int>> consumer) =>
+      bytes.pipe(consumer);
 }

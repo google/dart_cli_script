@@ -18,6 +18,7 @@ import 'package:test/test.dart';
 
 import 'package:cli_script/cli_script.dart';
 
+import 'fake_stream_consumer.dart';
 import 'util.dart';
 
 void main() {
@@ -74,6 +75,24 @@ void main() {
       var script = mainScript("print(stdin.readLineSync());");
       script.stdin.close();
       expect(script.stdout.lines, emits("null"));
+    });
+  });
+
+  group("> adds output to a consumer", () {
+    test("that listens immediately", () async {
+      var controller = StreamController<List<int>>();
+      expect(mainScript("print('hello!');") > controller, completes);
+      expect(controller.stream.lines, emits("hello!"));
+    });
+
+    // This mimics the behavior of [File.openWrite], which doesn't call
+    // [Stream.listen] until the file is actually open.
+    test("that waits to listen", () async {
+      await (mainScript("print('hello!');") >
+          FakeStreamConsumer(expectAsync1((stream) async {
+            await pumpEventQueue();
+            expect(stream.lines, emits("hello!"));
+          })));
     });
   });
 }

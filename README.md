@@ -195,6 +195,27 @@ Future<void> main() async {
 }
 ```
 
+`Script`, `Stream<List<int>>`, and `Stream<String>` also support the `>`
+operator as a shorthand for [`Stream.pipe()`]. This makes it easy to write the
+output of a script or pipeline to a file on disk:
+
+[`Stream.pipe()`]: https://api.dart.dev/stable/dart-async/Stream/pipe.html
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+void main() {
+  Script.capture((_) async {
+    await for (var file in lines("find . -type f -maxdepth 1")) {
+      var contents = await output("cat", args: [file]);
+      if (contents.contains("needle")) print(file);
+    }
+  }) > File("needles.txt").openWrite();
+}
+```
+
 ### Composability
 
 In shell scripts, everything is a process. Obviously child processes are

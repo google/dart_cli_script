@@ -65,4 +65,7 @@ extension ByteStreamExtensions on Stream<List<int>> {
       })), Stream.empty(), exitCodeCompleter.future);
     });
   }
+
+  /// Shorthand for [Stream.pipe].
+  Future<void> operator >(StreamConsumer<List<int>> consumer) => pipe(consumer);
 }

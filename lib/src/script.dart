@@ -26,7 +26,6 @@ import 'exception.dart';
 import 'parse_args.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
-import 'util.dart';
 
 /// A unit of execution that behaves like a process, with [stdin], [stdout], and
 /// [stderr] streams that ultimately produces an [exitCode] indicating success
@@ -67,11 +66,21 @@ class Script {
 
   /// The script's standard output stream, typically used to emit data it
   /// produces.
-  late final Stream<List<int>> stdout;
+  Stream<List<int>> get stdout {
+    _stdoutAccessed = true;
+    return _stdout;
+  }
+  late final Stream<List<int>> _stdout;
+  bool _stdoutAccessed = false;
 
   /// The script's standard error stream, typically used to emit error messages
   /// and diagnostics.
-  late final Stream<List<int>> stderr;
+  Stream<List<int>> get stderr {
+    _stderrAccessed = true;
+    return _stderr;
+  }
+  late final Stream<List<int>> _stderr;
+  bool _stderrAccessed = false;
 
   /// A controller for stderr produced by the [Script] infrastructure, merged
   /// with the stderr stream passed to [Script.fromComponents].
@@ -153,9 +162,9 @@ class Script {
   /// particular:
   ///
   /// * The [stdout] and [stderr] streams of any child [Script]s are forwarded
-  ///   to this script's [stdout] and [stderr], respectively, unless they're
-  ///   listened to within the span of a macrotask after being created (that is,
-  ///   before a [Timer.run] event fires).
+  ///   to this script's [stdout] and [stderr], respectively, unless the getters
+  ///   are accessed within the span of a macrotask after being created (that
+  ///   is, before a [Timer.run] event fires).
   ///
   /// * Calls to [print] are also forwarded to [stdout].
   ///
@@ -305,13 +314,14 @@ class Script {
           "that already exited.");
     }
 
-    var stdoutListened = false;
+    // TODO: there are too few guarantees about when a stream will actually get
+    // listened. Even piping it doesn't immediately listen. I think we need to
+    // just check access instead.
     var stdoutCompleter = StreamCompleter<List<int>>();
-    var stdout = stdoutCompleter.stream.onListen(() => stdoutListened = true);
+    var stdout = stdoutCompleter.stream;
 
-    var stderrListened = false;
     var stderrCompleter = StreamCompleter<List<int>>();
-    var stderr = stderrCompleter.stream.onListen(() => stderrListened = true);
+    var stderr = stderrCompleter.stream;
 
     var stdinCompleter = StreamSinkCompleter<List<int>>();
 
@@ -333,11 +343,11 @@ class Script {
     // possible that if the user adds a listener too late it will fail
     // consistently rather than flakily.
     Timer.run(() {
-      if (!stdoutListened) {
+      if (!script._stdoutAccessed) {
         _pipeUnlistenedStream(script.stdout, stdoutKey, io.stdout);
       }
 
-      if (!stderrListened) {
+      if (!script._stderrAccessed) {
         _pipeUnlistenedStream(script.stderr, stderrKey, io.stderr);
       }
     });
@@ -364,8 +374,8 @@ class Script {
   Script._(this.name, StreamConsumer<List<int>> stdin, Stream<List<int>> stdout,
       Stream<List<int>> stderr, Future<int> exitCode)
       : stdin = IOSink(stdin) {
-    this.stdout = stdout.handleError(_handleError).transform(_outputCloser);
-    this.stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
+    _stdout = stdout.handleError(_handleError).transform(_outputCloser);
+    _stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
         .handleError(_handleError)
         .transform(_outputCloser);
 
@@ -443,6 +453,10 @@ class Script {
   /// See also [pipe], which provides a syntax for creating a pipeline with many
   /// scripts at once.
   Script operator |(Script other) => Script.pipeline([this, other]);
+
+  /// Shorthand for `script.stdout.pipe(consumer)`.
+  Future<void> operator >(StreamConsumer<List<int>> consumer) =>
+      stdout.pipe(consumer);
 }
 
 /// A struct containing the components needed to create a [Script].
