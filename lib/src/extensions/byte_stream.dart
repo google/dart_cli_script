@@ -19,6 +19,7 @@ import 'package:async/async.dart';
 import 'package:charcode/charcode.dart';
 
 import '../script.dart';
+import '../util.dart';
 
 /// Extensions on [Stream<List<int>>] that make it easier to consume the output
 /// of scripts in a human-friendly, easily-to-manipulate manner.
@@ -58,11 +59,11 @@ extension ByteStreamExtensions on Stream<List<int>> {
   Script get _asScript {
     return Script.fromComponents("stream", () {
       var exitCodeCompleter = Completer<int>.sync();
-      return ScriptComponents(NullStreamSink(),
-          transform(StreamTransformer.fromHandlers(handleDone: (sink) {
-        exitCodeCompleter.complete(0);
-        sink.close();
-      })), Stream.empty(), exitCodeCompleter.future);
+      return ScriptComponents(
+          NullStreamSink(),
+          onDone(() => exitCodeCompleter.complete(0)),
+          Stream.empty(),
+          exitCodeCompleter.future);
     });
   }
 

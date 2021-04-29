@@ -26,6 +26,7 @@ import 'exception.dart';
 import 'parse_args.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
+import 'util.dart';
 
 /// A unit of execution that behaves like a process, with [stdin], [stdout], and
 /// [stderr] streams that ultimately produces an [exitCode] indicating success
@@ -247,6 +248,43 @@ class Script {
     return Script._(name ?? "capture", stdinController.sink, stdoutGroup.stream,
         stderrGroup.stream, exitCodeCompleter.future);
   }
+
+  /// Creates a [Script] from a [StreamTransformer] on byte streams.
+  ///
+  /// This script transforms all its stdin with [transformer] and emits it via
+  /// stdout. It exits once the transformed stream closes. Any error events
+  /// emitted by [transformer] are treated as errors in the script.
+  factory Script.fromByteTransformer(
+      StreamTransformer<List<int>, List<int>> transformer,
+      {String? name}) {
+    _checkCapture();
+    var controller = StreamController<List<int>>();
+    var exitCodeCompleter = Completer<int>.sync();
+    return Script._(
+        name ?? transformer.toString(),
+        controller.sink,
+        controller.stream
+            .transform(transformer)
+            .onDone(() => exitCodeCompleter.complete(0)),
+        Stream.empty(),
+        exitCodeCompleter.future);
+  }
+
+  /// Creates a [Script] from a [StreamTransformer] on string streams.
+  ///
+  /// This script transforms each line of stdin with [transformer] and emits it
+  /// via stdout. It exits once the transformed stream closes. Any error events
+  /// emitted by [transformer] are treated as errors in the script.
+  factory Script.fromLineTransformer(
+          StreamTransformer<String, String> transformer,
+          {String? name}) =>
+      Script.fromByteTransformer(
+          StreamTransformer.fromBind((stream) => stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())
+              .transform(transformer)
+              .map((line) => utf8.encode("$line\n"))),
+          name: name ?? transformer.toString());
 
   /// Pipes each script's [stdout] into the next script's [stdin].
   ///
