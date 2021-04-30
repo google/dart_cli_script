@@ -58,6 +58,46 @@ void main() {
         ]));
   });
 
+  test("forwards prints even if the capture closes synchronously", () {
+    expect(
+        Script.capture((_) async {
+          print("print");
+        }).stdout.lines,
+        emitsInOrder(["print", emitsDone]));
+  });
+
+  test("forwards writes to currentStdout as stdout", () {
+    expect(
+        Script.capture((_) async {
+          await mainScript("print('child 1');").done;
+          currentStdout.writeln("print 1");
+          await mainScript("print('child 2');").done;
+          currentStdout.writeln("print 2");
+        }).stdout.lines,
+        emitsInOrder([
+          "child 1",
+          "print 1",
+          "child 2",
+          "print 2",
+        ]));
+  });
+
+  test("forwards writes to currentStderr as stderr", () {
+    expect(
+        Script.capture((_) async {
+          await mainScript("stderr.writeln('child 1');").done;
+          currentStderr.writeln("print 1");
+          await mainScript("stderr.writeln('child 2');").done;
+          currentStderr.writeln("print 2");
+        }).stderr.lines,
+        emitsInOrder([
+          "child 1",
+          "print 1",
+          "child 2",
+          "print 2",
+        ]));
+  });
+
   test("prints an unhandled error to stderr", () {
     var script = Script.capture((_) => throw "oh no");
     expect(script.done, throwsA(anything));
@@ -70,8 +110,9 @@ void main() {
     });
 
     test("completes with 256 when the capture throws", () {
-      expect(Script.capture((_) => throw "oh no").exitCode,
-          completion(equals(256)));
+      var script = Script.capture((_) => throw "oh no");
+      script.stderr.drain();
+      expect(script.exitCode, completion(equals(256)));
     });
 
     group("forwards a child script's exit code", () {
@@ -172,12 +213,12 @@ void main() {
     test(
         "completes when an error is top-leveled even if the callback isn't "
         "done", () async {
-      expect(
-          Script.capture((_) {
-            Future<void>.error("oh no");
-            return Completer<void>().future;
-          }).exitCode,
-          completion(equals(256)));
+      var script = Script.capture((_) {
+        Future<void>.error("oh no");
+        return Completer<void>().future;
+      });
+      script.stderr.drain();
+      expect(script.exitCode, completion(equals(256)));
     });
   });
 

@@ -24,6 +24,7 @@ export 'src/byte_stream_extensions.dart';
 export 'src/exception.dart';
 export 'src/parse_args.dart' show arg;
 export 'src/script.dart';
+export 'src/stdio.dart' hide stdoutKey, stderrKey;
 
 /// Runs an executable for its side effects.
 ///
