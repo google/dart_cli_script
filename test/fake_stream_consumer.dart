@@ -14,13 +14,13 @@
 
 import 'dart:async';
 
-/// Stream extensions used internally within `cli_script`, not for public
-/// consumption.
-extension UtilStreamExtensions<T> on Stream<T> {
-  /// Returns a transformation of [this] that only emits error and done events,
-  /// not data events.
-  ///
-  /// Because the returned stream doesn't emit data events, it can be used as a
-  /// stream of any type.
-  Stream<S> withoutData<S>() => where((_) => false).cast<S>();
+/// A [StreamConsumer] whose implementation just comes from a callback.
+class FakeStreamConsumer<T> implements StreamConsumer<T> {
+  final Future<void> Function(Stream<T> stream) _implementation;
+
+  FakeStreamConsumer(this._implementation);
+
+  Future<void> addStream(Stream<T> stream) => _implementation(stream);
+
+  Future<void> close() => Future.value();
 }

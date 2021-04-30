@@ -18,6 +18,8 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:charcode/charcode.dart';
 
+import '../script.dart';
+
 /// Extensions on [Stream<List<int>>] that make it easier to consume the output
 /// of scripts in a human-friendly, easily-to-manipulate manner.
 extension ByteStreamExtensions on Stream<List<int>> {
@@ -38,4 +40,32 @@ extension ByteStreamExtensions on Stream<List<int>> {
   /// Returns a stream of UTF-8 lines emitted by this process.
   Stream<String> get lines =>
       transform(utf8.decoder).transform(const LineSplitter());
+
+  /// Pipes [this] into [script]'s [stdin].
+  ///
+  /// This works like [Script.pipe], treating this stream as a process that
+  /// emits only stdout. If [this] emits an error, it's treated the same as an
+  /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
+  /// and the virtual stream process exits with error code 256.
+  Script operator |(Script script) => _asScript | script;
+
+  /// Creates a [Script] representing this stream.
+  ///
+  /// This treats [this] as a process that emits only stdout. If [this] emits an
+  /// error, it's treated the same as an unhandled Dart error in a
+  /// [Script.capture] block: it's printed to stderr and the virtual stream
+  /// process exits with error code 256.
+  Script get _asScript {
+    return Script.fromComponents("stream", () {
+      var exitCodeCompleter = Completer<int>.sync();
+      return ScriptComponents(NullStreamSink(),
+          transform(StreamTransformer.fromHandlers(handleDone: (sink) {
+        exitCodeCompleter.complete(0);
+        sink.close();
+      })), Stream.empty(), exitCodeCompleter.future);
+    });
+  }
+
+  /// Shorthand for [Stream.pipe].
+  Future<void> operator >(StreamConsumer<List<int>> consumer) => pipe(consumer);
 }

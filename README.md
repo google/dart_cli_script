@@ -130,7 +130,91 @@ code unless the [`exitCode`] or [`success`] fields are accessed.
 
 ### Pipelining
 
-TODO: add pipelining
+In shell scripts, it's easy to hook multiple processes together in a pipeline
+where each one passes its output to the next. `cli_script` supports this to,
+using the [`|` operator]. This pipes all stdout from one script into another
+script's stdin and returns a new script that encapsulates both. This new script
+works just like a Bash pipeline with `set -o pipefail`: it forwards the last
+script's stdout and stderr, but it'll fail if *any* script in the pipeline
+fails.
+
+[`|` operator]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/operator_bitwise_or.html
+
+```dart
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var pipeline = Script("find -name *.dart") |
+      Script("xargs grep waitFor") |
+      Script("wc -l");
+  print("${await pipeline.stdout.text} instances of waitFor");
+}
+```
+
+Depending on how you're using a pipeline, you may find it more convenient to use
+the [`Script.pipeline`] constructor. This works just like the `|` operator, it
+just uses a different syntax.
+
+[`Script.pipeline`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/pipeline.html
+
+```dart
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var count = await Script.pipeline([
+    Script("find -name *.dart"),
+    Script("xargs grep waitFor"),
+    Script("wc -l")
+  ]).stdout.text;
+  print("$count instances of waitFor");
+}
+```
+
+In addition to piping scripts together, you can pipe the following types into
+scripts:
+
+* `Stream<List<int>>` (a stream of chunked binary data)
+* `Stream<String>` (a stream of lines of text)
+* `List<List<int>>` (chunked binary data)
+* `List<int>` (a single binary blob)
+* `List<String>` (lines of text)
+* `String` (a single text blob)
+
+This makes it easy to pass standard Dart data into process, such as files:
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+Future<void> main() async {
+  var pipeline = File("names.txt").openRead() |
+      Script("grep Natalie") |
+      Script("wc -l");
+  print("There are ${await pipeline.stdout.text} Natalies");
+}
+```
+
+`Script`, `Stream<List<int>>`, and `Stream<String>` also support the `>`
+operator as a shorthand for [`Stream.pipe()`]. This makes it easy to write the
+output of a script or pipeline to a file on disk:
+
+[`Stream.pipe()`]: https://api.dart.dev/stable/dart-async/Stream/pipe.html
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+void main() {
+  Script.capture((_) async {
+    await for (var file in lines("find . -type f -maxdepth 1")) {
+      var contents = await output("cat", args: [file]);
+      if (contents.contains("needle")) print(file);
+    }
+  }) > File("needles.txt").openWrite();
+}
+```
 
 ### Composability
 

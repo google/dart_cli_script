@@ -12,15 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'dart:async';
+import '../script.dart';
 
-/// Stream extensions used internally within `cli_script`, not for public
-/// consumption.
-extension UtilStreamExtensions<T> on Stream<T> {
-  /// Returns a transformation of [this] that only emits error and done events,
-  /// not data events.
+/// Extensions on [List<String>] for piping it as input to a [Script].
+extension LineListExtensions on List<String> {
+  /// Pipes [this] into [script]'s [stdin] with newlines baked in.
   ///
-  /// Because the returned stream doesn't emit data events, it can be used as a
-  /// stream of any type.
-  Stream<S> withoutData<S>() => where((_) => false).cast<S>();
+  /// Returns [script].
+  Script operator |(Script script) {
+    for (var line in this) {
+      script.stdin.writeln(line);
+    }
+    script.stdin.close();
+
+    return script;
+  }
 }

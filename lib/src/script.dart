@@ -26,7 +26,6 @@ import 'exception.dart';
 import 'parse_args.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
-import 'util.dart';
 
 /// A unit of execution that behaves like a process, with [stdin], [stdout], and
 /// [stderr] streams that ultimately produces an [exitCode] indicating success
@@ -67,11 +66,23 @@ class Script {
 
   /// The script's standard output stream, typically used to emit data it
   /// produces.
-  late final Stream<List<int>> stdout;
+  Stream<List<int>> get stdout {
+    _stdoutAccessed = true;
+    return _stdout;
+  }
+
+  late final Stream<List<int>> _stdout;
+  bool _stdoutAccessed = false;
 
   /// The script's standard error stream, typically used to emit error messages
   /// and diagnostics.
-  late final Stream<List<int>> stderr;
+  Stream<List<int>> get stderr {
+    _stderrAccessed = true;
+    return _stderr;
+  }
+
+  late final Stream<List<int>> _stderr;
+  bool _stderrAccessed = false;
 
   /// A controller for stderr produced by the [Script] infrastructure, merged
   /// with the stderr stream passed to [Script.fromComponents].
@@ -153,9 +164,9 @@ class Script {
   /// particular:
   ///
   /// * The [stdout] and [stderr] streams of any child [Script]s are forwarded
-  ///   to this script's [stdout] and [stderr], respectively, unless they're
-  ///   listened to within the span of a macrotask after being created (that is,
-  ///   before a [Timer.run] event fires).
+  ///   to this script's [stdout] and [stderr], respectively, unless the getters
+  ///   are accessed within the span of a macrotask after being created (that
+  ///   is, before a [Timer.run] event fires).
   ///
   /// * Calls to [print] are also forwarded to [stdout].
   ///
@@ -237,6 +248,47 @@ class Script {
     });
   }
 
+  /// Pipes each script's [stdout] into the next script's [stdin].
+  ///
+  /// Returns a new [Script] whose [stdin] comes from the first script's, and
+  /// whose [stdout] and [stderr] come from the last script's.
+  ///
+  /// This behaves like a Bash pipeline with `set -o pipefail`: if any script
+  /// exits with a non-zero exit code, the returned script will fail, but it
+  /// will only exit once *all* component scripts have exited. If multiple
+  /// scripts exit with errors, the last non-zero exit code will be returned.
+  ///
+  /// This doesn't add any special handling for any script's [stderr] except for
+  /// the last one.
+  ///
+  /// See also [operator |], which provides a syntax for creating pipelines two
+  /// scripts at a time.
+  factory Script.pipeline(Iterable<Script> scripts, {String? name}) {
+    var list = scripts.toList();
+    if (list.isEmpty) {
+      throw ArgumentError.value(list, "script", "May not be empty");
+    } else if (list.length == 1) {
+      return list.first;
+    }
+
+    return Script.fromComponents(
+        name ?? list.map((script) => script.name).join(" | "), () {
+      for (var i = 0; i < list.length - 1; i++) {
+        list[i].stdout.pipe(list[i + 1].stdin);
+      }
+
+      return ScriptComponents(
+          list.first.stdin,
+          // Wrap the final script's stdout and stderr in [SubscriptionStream]s
+          // so that the inner scripts will see that someone's listening and not
+          // try to top-level the streams' output.
+          SubscriptionStream(list.last.stdout.listen(null)),
+          SubscriptionStream(list.last.stderr.listen(null)),
+          Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
+              exitCodes.lastWhere((code) => code != 0, orElse: () => 0)));
+    });
+  }
+
   /// Creates a script from existing [stdin], [stdout], [stderr], and [exitCode]
   /// objects encapsulated in a [ScriptComponents].
   ///
@@ -264,13 +316,14 @@ class Script {
           "that already exited.");
     }
 
-    var stdoutListened = false;
+    // TODO: there are too few guarantees about when a stream will actually get
+    // listened. Even piping it doesn't immediately listen. I think we need to
+    // just check access instead.
     var stdoutCompleter = StreamCompleter<List<int>>();
-    var stdout = stdoutCompleter.stream.onListen(() => stdoutListened = true);
+    var stdout = stdoutCompleter.stream;
 
-    var stderrListened = false;
     var stderrCompleter = StreamCompleter<List<int>>();
-    var stderr = stderrCompleter.stream.onListen(() => stderrListened = true);
+    var stderr = stderrCompleter.stream;
 
     var stdinCompleter = StreamSinkCompleter<List<int>>();
 
@@ -279,7 +332,7 @@ class Script {
         stdinCompleter.sink.rejectErrors(),
         stdout,
         stderr,
-        Future.microtask(callback).then((components) {
+        Future.sync(callback).then((components) {
           stdinCompleter.setDestinationSink(components.stdin);
           stdoutCompleter.setSourceStream(components.stdout);
           stderrCompleter.setSourceStream(components.stderr);
@@ -292,11 +345,11 @@ class Script {
     // possible that if the user adds a listener too late it will fail
     // consistently rather than flakily.
     Timer.run(() {
-      if (!stdoutListened) {
+      if (!script._stdoutAccessed) {
         _pipeUnlistenedStream(script.stdout, stdoutKey, io.stdout);
       }
 
-      if (!stderrListened) {
+      if (!script._stderrAccessed) {
         _pipeUnlistenedStream(script.stderr, stderrKey, io.stderr);
       }
     });
@@ -323,8 +376,8 @@ class Script {
   Script._(this.name, StreamConsumer<List<int>> stdin, Stream<List<int>> stdout,
       Stream<List<int>> stderr, Future<int> exitCode)
       : stdin = IOSink(stdin) {
-    this.stdout = stdout.handleError(_handleError).transform(_outputCloser);
-    this.stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
+    _stdout = stdout.handleError(_handleError).transform(_outputCloser);
+    _stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
         .handleError(_handleError)
         .transform(_outputCloser);
 
@@ -386,6 +439,26 @@ class Script {
   /// Returns a stream that combines both [stdout] and [stderr] the same way
   /// they'd be displayed in a terminal.
   Stream<List<int>> combineOutput() => StreamGroup.merge([stdout, stderr]);
+
+  /// Pipes this script's [stdout] into [other]'s [stdin].
+  ///
+  /// Returns a new [Script] whose [stdin] comes from [this] and whose [stdout]
+  /// and [stderr] come from [other].
+  ///
+  /// This behaves like a Bash pipeline with `set -o pipefail`: if either [this]
+  /// or [other] exits with a non-zero exit code, the returned script will fail,
+  /// but it will only exit once *both* component scripts have exited. If both
+  /// exit with errors, [other]'s exit code will be used.
+  ///
+  /// This doesn't add any special handling for [this]'s [stderr].
+  ///
+  /// See also [pipe], which provides a syntax for creating a pipeline with many
+  /// scripts at once.
+  Script operator |(Script other) => Script.pipeline([this, other]);
+
+  /// Shorthand for `script.stdout.pipe(consumer)`.
+  Future<void> operator >(StreamConsumer<List<int>> consumer) =>
+      stdout.pipe(consumer);
 }
 
 /// A struct containing the components needed to create a [Script].
