@@ -19,11 +19,11 @@ import 'stdio_group.dart';
 
 /// An opaque key for the Zone value that contains the [StdioGroup] for the
 /// current captured stdout context.
-final stdoutKey = Object();
+final Object stdoutKey = #_stdoutKey;
 
 /// An opaque key for the Zone value that contains the [StdioGroup] for the
 /// current captured stderr context.
-final stderrKey = Object();
+final Object stderrKey = #_stderrKey;
 
 /// Returns a sink for writing directly to the current stdout stream.
 ///
