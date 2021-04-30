@@ -44,11 +44,15 @@ extension ByteStreamExtensions on Stream<List<int>> {
 
   /// Pipes [this] into [script]'s [stdin].
   ///
+  /// The [other] must be either a [Script] or an object that can be converted
+  /// into a script using the [Script.fromByteTransformer] and
+  /// [Script.fromLineTransformer] constructors.
+  ///
   /// This works like [Script.pipe], treating this stream as a process that
   /// emits only stdout. If [this] emits an error, it's treated the same as an
   /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
   /// and the virtual stream process exits with error code 256.
-  Script operator |(Script script) => _asScript | script;
+  Script operator |(Object script) => _asScript | script;
 
   /// Creates a [Script] representing this stream.
   ///

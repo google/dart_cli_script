@@ -288,6 +288,10 @@ class Script {
 
   /// Pipes each script's [stdout] into the next script's [stdin].
   ///
+  /// Each element of [scripts] must be either a [Script] or an object that can
+  /// be converted into a script using the [Script.fromByteTransformer] and
+  /// [Script.fromLineTransformer] constructors.
+  ///
   /// Returns a new [Script] whose [stdin] comes from the first script's, and
   /// whose [stdout] and [stderr] come from the last script's.
   ///
@@ -301,10 +305,10 @@ class Script {
   ///
   /// See also [operator |], which provides a syntax for creating pipelines two
   /// scripts at a time.
-  factory Script.pipeline(Iterable<Script> scripts, {String? name}) {
+  factory Script.pipeline(Iterable<Object> scripts, {String? name}) {
     _checkCapture();
 
-    var list = scripts.toList();
+    var list = scripts.map(_toScript).toList();
     if (list.isEmpty) {
       throw ArgumentError.value(list, "script", "May not be empty");
     } else if (list.length == 1) {
@@ -325,6 +329,21 @@ class Script {
         SubscriptionStream(list.last.stderr.listen(null)),
         Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
             exitCodes.lastWhere((code) => code != 0, orElse: () => 0)));
+  }
+
+  /// Converts [scriptlike] into a [Script], or throws an [ArgumentError] if it
+  /// can't be converted.
+  static Script _toScript(Object scriptlike) {
+    if (scriptlike is Script) {
+      return scriptlike;
+    } else if (scriptlike is StreamTransformer<List<int>, List<int>>) {
+      return Script.fromByteTransformer(scriptlike);
+    } else if (scriptlike is StreamTransformer<String, String>) {
+      return Script.fromLineTransformer(scriptlike);
+    } else {
+      throw ArgumentError(
+          "$scriptlike is not a Script and can't be converted to one.");
+    }
   }
 
   /// Creates a script from existing [stdin], [stdout], [stderr], and [exitCode]
@@ -495,6 +514,10 @@ class Script {
 
   /// Pipes this script's [stdout] into [other]'s [stdin].
   ///
+  /// The [other] must be either a [Script] or an object that can be converted
+  /// into a script using the [Script.fromByteTransformer] and
+  /// [Script.fromLineTransformer] constructors.
+  ///
   /// Returns a new [Script] whose [stdin] comes from [this] and whose [stdout]
   /// and [stderr] come from [other].
   ///
@@ -507,7 +530,7 @@ class Script {
   ///
   /// See also [pipe], which provides a syntax for creating a pipeline with many
   /// scripts at once.
-  Script operator |(Script other) => Script.pipeline([this, other]);
+  Script operator |(Object other) => Script.pipeline([this, other]);
 
   /// Shorthand for `script.stdout.pipe(consumer)`.
   Future<void> operator >(StreamConsumer<List<int>> consumer) =>

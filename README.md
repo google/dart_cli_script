@@ -187,6 +187,26 @@ void main() {
 }
 ```
 
+You can even include certain `StreamTransformer`s in pipelines: those that
+transform byte streams (`StreamTransformer<List<int>, List<int>>`) and those
+that transform streams of lines (`StreamTransformer<String, String>`). These act
+like scripts that transform their stdin into stdout according to the logic of
+the transformer.
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+void main() {
+  wrapMain(() async {
+    Script("cat data.gz") |
+        zlib.decoder |
+        Script("grep needle");
+  });
+}
+```
+
 In addition to piping scripts together, you can pipe the following types into
 scripts:
 
