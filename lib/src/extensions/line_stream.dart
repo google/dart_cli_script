@@ -15,6 +15,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:charcode/charcode.dart';
+import 'package:string_scanner/string_scanner.dart';
+
 import '../script.dart';
 import 'byte_stream.dart';
 
@@ -35,4 +38,91 @@ extension LineStreamExtensions on Stream<String> {
   /// Shorthand for `stream.bytes.pipe`.
   Future<void> operator >(StreamConsumer<List<int>> consumer) =>
       bytes.pipe(consumer);
+
+  /// Returns the elements of [this] that match [regexp].
+  ///
+  /// If [exclude] is `true`, instead returns the elements of [this] that
+  /// *don't* match [regexp].
+  ///
+  /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+  /// [new RegExp].
+  Stream<String> grep(String regexp,
+      {bool exclude = false,
+      bool caseSensitive = true,
+      bool unicode = false,
+      bool dotAll = false}) {
+    var pattern = RegExp(regexp,
+        caseSensitive: caseSensitive, unicode: unicode, dotAll: dotAll);
+    return where((line) => pattern.hasMatch(line) != exclude);
+  }
+
+  /// Replaces matches of [regexp] with [replacement].
+  ///
+  /// By default, only replaces the first match per line. If [all] is `true`,
+  /// replaces all matches in each line instead.
+  ///
+  /// The [replacement] may contain references to the capture groups in
+  /// [regexp], using a backslash followed by the group number. Backslashes not
+  /// followed by a number return the character immediately following them.
+  ///
+  /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+  /// [new RegExp].
+  Stream<String> replace(String regexp, String replacement,
+          {bool all = false,
+          bool caseSensitive = true,
+          bool unicode = false,
+          bool dotAll = false}) =>
+      replaceMapped(regexp, (match) {
+        var scanner = StringScanner(replacement);
+        var buffer = StringBuffer();
+
+        while (!scanner.isDone) {
+          var next = scanner.readChar();
+          if (next != $backslash) {
+            buffer.writeCharCode(next);
+            continue;
+          }
+
+          if (scanner.isDone) break;
+
+          next = scanner.readChar();
+          if (next >= $0 && next <= $9) {
+            var groupNumber = next - $0;
+            if (groupNumber > match.groupCount) {
+              scanner.error("RegExp doesn't have group $groupNumber.",
+                  position: scanner.position - 2, length: 2);
+            }
+
+            var group = match[groupNumber];
+            if (group != null) buffer.write(group);
+          } else {
+            buffer.writeCharCode(next);
+          }
+        }
+
+        return buffer.toString();
+      },
+          all: all,
+          caseSensitive: caseSensitive,
+          unicode: unicode,
+          dotAll: dotAll);
+
+  /// Replaces matches of [regexp] with the result of calling [replace].
+  ///
+  /// By default, only replaces the first match per line. If [all] is `true`,
+  /// replaces all matches in each line instead.
+  ///
+  /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+  /// [new RegExp].
+  Stream<String> replaceMapped(String regexp, String replace(Match match),
+      {bool all = false,
+      bool caseSensitive = true,
+      bool unicode = false,
+      bool dotAll = false}) {
+    var pattern = RegExp(regexp,
+        caseSensitive: caseSensitive, unicode: unicode, dotAll: dotAll);
+    return map((line) => all
+        ? line.replaceAllMapped(pattern, replace)
+        : line.replaceFirstMapped(pattern, replace));
+  }
 }

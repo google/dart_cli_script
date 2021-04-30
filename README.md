@@ -15,6 +15,7 @@ scripting context.
 * [Dartiness](#dartiness)
 * [Other Features](#other-features)
   * [Argument Parsing](#argument-parsing)
+  * [Search and Replace](#search-and-replace)
 
 While `cli_script` can be used as a library in any Dart application, its primary
 goal is to support stand-alone scripts that serve the same purpose as shell
@@ -330,4 +331,40 @@ The arguments from `executableAndArgs` always come before the arguments in
 `executableAndArgs` using the [`arg()`] function, as in `run("cp -r
 ${arg(source)} build/")`.
 
-[`run()`]: https://pub.dev/documentation/cli_script/latest/cli_script/arg.html
+[`run()`]: https://pub.dev/documentation/cli_script/latest/cli_script/run.html
+
+#### Search and Replace
+
+You can always continue to use `grep` and `sed` for your search-and-replace
+needs, but `cli_script` has some useful functions to make that possible without
+even bothering with a subprocess. The [`grep()`], [`replace()`], and
+[`replaceMapped()`] functions return `StreamTransformer`s that can be used in
+pipelines just like `Script`s:
+
+[`grep()`]: https://pub.dev/documentation/cli_script/latest/cli_script/grep.html
+[`replace()`]: https://pub.dev/documentation/cli_script/latest/cli_script/replace.html
+[`replaceMapped()`]: https://pub.dev/documentation/cli_script/latest/cli_script/replaceMapped.html
+
+```dart
+import 'dart:io';
+
+import 'package:cli_script/cli_script.dart';
+
+void main() {
+  wrapMain(() async {
+    var pipeline = File("names.txt").openRead() |
+        grep("Natalie") |
+        Script("wc -l");
+    print("There are ${await pipeline.stdout.text} Natalies");
+  });
+}
+```
+
+There are also corresponding [`Stream<String>.grep()`],
+[`Stream<String>.replace()`], and [`Stream<String>.replaceMapped()`] extension
+methods that make it easy to do these transformations on individual streams if
+you need.
+
+[`Stream<String>.grep()`]: https://pub.dev/documentation/cli_script/latest/cli_script/LineStreamExtensions/grep.html
+[`Stream<String>.replace()`]: https://pub.dev/documentation/cli_script/latest/cli_script/LineStreamExtensions/replace.html
+[`Stream<String>.replaceMapped()`]: https://pub.dev/documentation/cli_script/latest/cli_script/LineStreamExtensions/replaceMapped.html
