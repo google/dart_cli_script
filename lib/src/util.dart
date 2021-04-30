@@ -14,6 +14,22 @@
 
 import 'dart:async';
 
+/// Runs [onFinally] after [callback] completes, whether it returns a [Future]
+/// or a synchronous value.
+T tryFinally<T>(T callback(), void onFinally()) {
+  late T result;
+  try {
+    result = callback();
+  } catch (_) {
+    onFinally();
+    rethrow;
+  }
+
+  if (result is Future) return result.whenComplete(onFinally) as T;
+  onFinally();
+  return result;
+}
+
 /// Stream extensions used internally within `cli_script`, not for public
 /// consumption.
 extension UtilStreamExtensions<T> on Stream<T> {

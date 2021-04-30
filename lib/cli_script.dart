@@ -34,6 +34,7 @@ export 'src/exception.dart';
 export 'src/parse_args.dart' show arg;
 export 'src/script.dart';
 export 'src/stdio.dart' hide stdoutKey, stderrKey;
+export 'src/temp.dart';
 
 /// The packages whose stack frames should be folded by [wrapMain].
 const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
