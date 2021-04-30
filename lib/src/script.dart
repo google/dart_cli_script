@@ -70,6 +70,7 @@ class Script {
     _stdoutAccessed = true;
     return _stdout;
   }
+
   late final Stream<List<int>> _stdout;
   bool _stdoutAccessed = false;
 
@@ -79,6 +80,7 @@ class Script {
     _stderrAccessed = true;
     return _stderr;
   }
+
   late final Stream<List<int>> _stderr;
   bool _stderrAccessed = false;
 
