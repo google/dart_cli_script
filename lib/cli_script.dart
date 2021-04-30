@@ -247,3 +247,70 @@ StreamTransformer<String, String> replaceMapped(
         caseSensitive: caseSensitive,
         unicode: unicode,
         dotAll: dotAll));
+
+/// A shorthand for opening the file at [path] as a stream.
+///
+/// With [ByteStreamExtensions.operator |], this can be used to pass the
+/// contents of a file into a pipeline:
+///
+/// ```dart
+/// import 'dart:io';
+///
+/// import 'package:cli_script/cli_script.dart';
+///
+/// void main() {
+///   wrapMain(() async {
+///     var pipeline = read("names.txt") |
+///         Script("grep Natalie") |
+///         Script("wc -l");
+///     print("There are ${await pipeline.stdout.text} Natalies");
+///   });
+/// }
+/// ```
+Stream<List<int>> read(String path) => File(path).openRead();
+
+/// A shorthand for opening a sink that writes to the file at [path].
+///
+/// With [Script.operator >], this can be used to write the output of a script
+/// to a file:
+///
+/// ```dart
+/// import 'dart:io';
+///
+/// import 'package:cli_script/cli_script.dart';
+///
+/// void main() {
+///   wrapMain(() {
+///     Script.capture((_) async {
+///       await for (var file in lines("find . -type f -maxdepth 1")) {
+///         var contents = await output("cat", args: [file]);
+///         if (contents.contains("needle")) print(file);
+///       }
+///     }) > write("needles.txt");
+///   });
+/// }
+/// ```
+IOSink write(String path) => File(path).openWrite();
+
+/// A shorthand for opening a sink that appends to the file at [path].
+///
+/// With [Script.operator >], this can be used to append the output of a script
+/// to a file:
+///
+/// ```dart
+/// import 'dart:io';
+///
+/// import 'package:cli_script/cli_script.dart';
+///
+/// void main() {
+///   wrapMain(() {
+///     Script.capture((_) async {
+///       await for (var file in lines("find . -type f -maxdepth 1")) {
+///         var contents = await output("cat", args: [file]);
+///         if (contents.contains("needle")) print(file);
+///       }
+///     }) > append("needles.txt");
+///   });
+/// }
+/// ```
+IOSink append(String path) => File(path).openWrite(mode: FileMode.append);

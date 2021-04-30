@@ -227,7 +227,7 @@ import 'package:cli_script/cli_script.dart';
 
 void main() {
   wrapMain(() async {
-    var pipeline = File("names.txt").openRead() |
+    var pipeline = read("names.txt") |
         Script("grep Natalie") |
         Script("wc -l");
     print("There are ${await pipeline.stdout.text} Natalies");
@@ -253,7 +253,7 @@ void main() {
         var contents = await output("cat", args: [file]);
         if (contents.contains("needle")) print(file);
       }
-    }) > File("needles.txt").openWrite();
+    }) > write("needles.txt");
   });
 }
 ```
