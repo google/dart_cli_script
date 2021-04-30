@@ -66,6 +66,7 @@ void wrapMain(FutureOr<void> callback(),
     if (error is! ScriptException) {
       stderr.writeln(error);
       stderr.writeln(chain);
+      // Use the same exit code that Dart does for unhandled exceptions.
       exit(254);
     }
 

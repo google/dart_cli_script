@@ -42,7 +42,7 @@ much more nicely than Dart's built-in handling!)
 
 Many programming environments have tried to make themselves suitable for shell
 scripting, but in the end they all fall far short of the ease of calling out to
-subprocesseses in Bash. As such, a principal design goal of `cli_pkg` is to
+subprocesseses in Bash. As such, a principal design goal of `cli_script` is to
 identify the core virtues that make shell scripting so appealing and reproduce
 them as closely as possible in Dart:
 
