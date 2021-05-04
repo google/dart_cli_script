@@ -138,6 +138,99 @@ void main() {
     });
   });
 
+  group("withTempPathAsync", () {
+    test("runs the callback", () async {
+      await withTempPathAsync(expectAsync1((_) {}));
+    });
+
+    test("passes a path that doesn't exist", () async {
+      await withTempPathAsync((path) {
+        expect(FileSystemEntity.typeSync(path),
+            equals(FileSystemEntityType.notFound));
+      });
+    });
+
+    test("passes different paths each time", () async {
+      await withTempPathAsync((path1) async {
+        await withTempPathAsync((path2) async {
+          await withTempPathAsync((path3) {
+            expect(path1, isNot(equals(path2)));
+            expect(path2, isNot(equals(path3)));
+            expect(path3, isNot(equals(path1)));
+          });
+        });
+      });
+    });
+
+    test("adds the prefix to the path", () async {
+      await withTempPathAsync(
+          (path) => expect(p.basename(path), startsWith("foo-")),
+          prefix: "foo-");
+    });
+
+    test("adds the suffix to the path", () async {
+      await withTempPathAsync((path) => expect(path, endsWith(".txt")),
+          suffix: ".txt");
+    });
+
+    test("puts the path in Directory.systemTemp by default", () async {
+      await withTempPathAsync((path) =>
+          expect(p.isWithin(Directory.systemTemp.path, path), isTrue));
+    });
+
+    test("puts the path in parent", () async {
+      await withTempPathAsync(
+          (path) => expect(p.isWithin(Directory.current.path, path), isTrue),
+          parent: Directory.current.path);
+    });
+
+    test("returns the callback's return value", () {
+      expect(
+          withTempPathAsync((_) => Future.value(123)), completion(equals(123)));
+    });
+
+    group("deletes the path afterwards", () {
+      late String path;
+      test("if the callback ends successfully", () async {
+        var callbackStartedCompleter = Completer<void>();
+        var callbackFinishedCompleter = Completer<void>();
+        var future = withTempPathAsync((path_) {
+          callbackStartedCompleter.complete();
+          path = path_;
+          File(path).writeAsStringSync("hello!");
+          return callbackFinishedCompleter.future;
+        });
+
+        await callbackStartedCompleter.future;
+        expect(File(path).existsSync(), isTrue);
+
+        callbackFinishedCompleter.complete();
+        await future;
+        expect(FileSystemEntity.typeSync(path),
+            equals(FileSystemEntityType.notFound));
+      });
+
+      test("if the callback throws", () async {
+        var callbackStartedCompleter = Completer<void>();
+        var callbackFinishedCompleter = Completer<void>();
+        var future = withTempPathAsync((path_) {
+          callbackStartedCompleter.complete();
+          path = path_;
+          File(path).writeAsStringSync("hello!");
+          return callbackFinishedCompleter.future;
+        });
+
+        await callbackStartedCompleter.future;
+        expect(File(path).existsSync(), isTrue);
+
+        callbackFinishedCompleter.completeError("oh no");
+        await expectLater(future, throwsA("oh no"));
+        expect(FileSystemEntity.typeSync(path),
+            equals(FileSystemEntityType.notFound));
+      });
+    });
+  });
+
   group("withTempDir", () {
     test("runs the callback", () {
       withTempDir(expectAsync1((_) {}));
@@ -248,6 +341,103 @@ void main() {
           await expectLater(future, throwsA("oh no"));
           expect(Directory(dir).existsSync(), isFalse);
         });
+      });
+    });
+  });
+
+  group("withTempDirAsync", () {
+    test("runs the callback", () async {
+      await withTempDirAsync(expectAsync1((_) {}));
+    });
+
+    test("creates a directory at that location", () async {
+      await withTempDirAsync((dir) {
+        expect(Directory(dir).existsSync(), isTrue);
+      });
+    });
+
+    test("creates different directories each time", () async {
+      await withTempDirAsync((dir1) async {
+        await withTempDirAsync((dir2) async {
+          await withTempDirAsync((dir3) {
+            expect(dir1, isNot(equals(dir2)));
+            expect(dir2, isNot(equals(dir3)));
+            expect(dir3, isNot(equals(dir1)));
+          });
+        });
+      });
+    });
+
+    test("adds the prefix to the directory", () async {
+      await withTempDirAsync(
+          (dir) => expect(p.basename(dir), startsWith("foo-")),
+          prefix: "foo-");
+    });
+
+    test("adds the suffix to the directory", () async {
+      await withTempDirAsync((dir) => expect(dir, endsWith(".txt")),
+          suffix: ".txt");
+    });
+
+    test("puts the directory in Directory.systemTemp by default", () async {
+      await withTempDirAsync(
+          (dir) => expect(p.isWithin(Directory.systemTemp.path, dir), isTrue));
+    });
+
+    test("puts the directory in parent", () async {
+      await withTempDirAsync(
+          (dir) => expect(p.isWithin(Directory.current.path, dir), isTrue),
+          parent: Directory.current.path);
+    });
+
+    test("returns the callback's return value", () {
+      expect(
+          withTempDirAsync((_) => Future.value(123)), completion(equals(123)));
+    });
+
+    group("deletes the directory afterwards", () {
+      late String dir;
+      test("even if it has contents", () async {
+        await withTempDirAsync((dir_) {
+          dir = dir_;
+          File(p.join(dir, 'file.txt')).writeAsStringSync("hello!");
+        });
+
+        expect(Directory(dir).existsSync(), isFalse);
+      });
+
+      test("if the callback ends successfully", () async {
+        var callbackStartedCompleter = Completer<void>();
+        var callbackFinishedCompleter = Completer<void>();
+        var future = withTempDirAsync((dir_) {
+          callbackStartedCompleter.complete();
+          dir = dir_;
+          return callbackFinishedCompleter.future;
+        });
+
+        await callbackStartedCompleter.future;
+        expect(Directory(dir).existsSync(), isTrue);
+
+        callbackFinishedCompleter.complete();
+        await future;
+        expect(Directory(dir).existsSync(), isFalse);
+      });
+
+      test("if the callback throws", () async {
+        var callbackStartedCompleter = Completer<void>();
+        var callbackFinishedCompleter = Completer<void>();
+        var future = withTempDirAsync((dir_) {
+          callbackStartedCompleter.complete();
+          dir = dir_;
+          return callbackFinishedCompleter.future;
+        });
+
+        await callbackStartedCompleter.future;
+        expect(Directory(dir).existsSync(), isTrue);
+
+        callbackFinishedCompleter.completeError("oh no");
+        await expectLater(future, throwsA("oh no"));
+        expect(Directory(dir).existsSync(), isFalse);
       });
     });
   });

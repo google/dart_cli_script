@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -35,7 +36,9 @@ const _slugCharacters = 16;
 /// entity, and deletes whatever's at that name after [callback] finishes.
 ///
 /// The [callback] may return a [Future], in which case the path isn't deleted
-/// until that [Future] completes.
+/// until that [Future] completes. Whether or not [callback] returns a [Future],
+/// this deletes the temporary path synchronously; use [withTempPathAsync] to
+/// delete it asynchronously instead.
 ///
 /// If [prefix] is passed, it's addded to the beginning of the temporary path's
 /// basename. If [suffix] is passed, it's added to the end. If [parent] is
@@ -43,11 +46,7 @@ const _slugCharacters = 16;
 /// [Directory.systemTemp].
 T withTempPath<T>(T callback(String path),
     {String? prefix, String? suffix, String? parent}) {
-  var slug = String.fromCharCodes(
-      Iterable.generate(_slugCharacters, (_) => _randomAlphanumeric()));
-  var path = p.join(parent ?? Directory.systemTemp.path,
-      "${prefix ?? ''}$slug${suffix ?? ''}");
-
+  var path = _tempPathName(prefix, suffix, parent);
   return tryFinally(() => callback(path), () {
     try {
       File(path).deleteSync(recursive: true);
@@ -58,11 +57,33 @@ T withTempPath<T>(T callback(String path),
   });
 }
 
+/// Like [withTempPath], but deletes the temporary path asynchronously.
+///
+/// Note that even [withTempPath] can safely be used with an asynchronous
+/// [callback]. This function is only necessary if you need the automatic
+/// filesystem operations to be asynchronous.
+Future<T> withTempPathAsync<T>(FutureOr<T> callback(String path),
+    {String? prefix, String? suffix, String? parent}) async {
+  var path = _tempPathName(prefix, suffix, parent);
+  try {
+    return await callback(path);
+  } finally {
+    try {
+      await File(path).delete(recursive: true);
+    } on IOException {
+      // Ignore cleanup errors. This is probably because the file was never
+      // created in the first place.
+    }
+  }
+}
+
 /// Creates a unique temporary directory, passes it to [callback] and deletes it
 /// and its contents after [callback] finishes.
 ///
 /// The [callback] may return a [Future], in which case the path isn't deleted
-/// until that [Future] completes.
+/// until that [Future] completes. Whether or not [callback] returns a [Future],
+/// this creates and deletes the temporary directory synchronously; use
+/// [withTempDirAsync] to delete it asynchronously instead.
 ///
 /// If [prefix] is passed, it's addded to the beginning of the temporary
 /// directory's basename. If [suffix] is passed, it's added to the end. If
@@ -74,6 +95,28 @@ T withTempDir<T>(T callback(String dir),
       Directory(path).createSync();
       return callback(path);
     }, prefix: prefix, suffix: suffix, parent: parent);
+
+/// Like [withTempDir], but creates and deletes the temporary directory
+/// asynchronously.
+///
+/// Note that even [withTempDir] can safely be used with an asynchronous
+/// [callback]. This function is only necessary if you need the automatic
+/// filesystem operations to be asynchronous.
+Future<T> withTempDirAsync<T>(FutureOr<T> callback(String dir),
+        {String? prefix, String? suffix, String? parent}) =>
+    withTempPathAsync((path) async {
+      await Directory(path).create();
+      return await callback(path);
+    }, prefix: prefix, suffix: suffix, parent: parent);
+
+/// Returns the name of a temporary path within [parent] with the given [prefix]
+/// and [suffix].
+String _tempPathName(String? prefix, String? suffix, String? parent) {
+  var slug = String.fromCharCodes(
+      Iterable.generate(_slugCharacters, (_) => _randomAlphanumeric()));
+  return p.join(parent ?? Directory.systemTemp.path,
+      "${prefix ?? ''}$slug${suffix ?? ''}");
+}
 
 /// Returns a random alphanumeric character.
 int _randomAlphanumeric() {
