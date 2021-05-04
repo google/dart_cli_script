@@ -40,7 +40,7 @@ Script dartScript(String code,
 }
 
 /// A shorthand for [dartScript] that runs [code] in the body of an async
-/// `main()` method with access to `dart:io` and `dart:async`.
+/// `main()` method with access to `dart:async`, `dart:convert`, and `dart:io`.
 Script mainScript(String code,
         {List<String>? args,
         String? name,
@@ -49,6 +49,7 @@ Script mainScript(String code,
         bool includeParentEnvironment = true}) =>
     dartScript("""
       import 'dart:async';
+      import 'dart:convert';
       import 'dart:io';
 
       Future<void> main() async {

@@ -14,6 +14,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:test/test.dart';
 
@@ -35,6 +36,13 @@ void main() {
         mainScript('print("b: " + stdin.readLineSync()!);');
     pipeline.stdin.writeln("hello!");
     expect(pipeline.stdout.lines, emits("b: a: hello!"));
+  });
+
+  test("pipes a scriptlike object", () {
+    var pipeline =
+        mainScript('stdout.add(zlib.encode(utf8.encode("hello!")));') |
+            zlib.decoder;
+    expect(pipeline.stdout.lines, emits("hello!"));
   });
 
   group("pipes many scripts' stdios together", () {

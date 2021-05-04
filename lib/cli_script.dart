@@ -20,6 +20,7 @@ import 'package:stack_trace/stack_trace.dart';
 
 import 'src/exception.dart';
 import 'src/extensions/byte_stream.dart';
+import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
 import 'src/util.dart';
 
@@ -185,3 +186,64 @@ Future<bool> check(String executableAndArgs,
             environment: environment,
             includeParentEnvironment: includeParentEnvironment)
         .success;
+
+/// Returns a transformer that emits only the the elements of the source stream
+/// that match [regexp].
+///
+/// If [exclude] is `true`, instead returns the elements of the source stream
+/// that *don't* match [regexp].
+///
+/// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+/// [new RegExp].
+StreamTransformer<String, String> grep(String regexp,
+        {bool exclude = false,
+        bool caseSensitive = true,
+        bool unicode = false,
+        bool dotAll = false}) =>
+    StreamTransformer.fromBind((stream) => stream.grep(regexp,
+        exclude: exclude,
+        caseSensitive: caseSensitive,
+        unicode: unicode,
+        dotAll: dotAll));
+
+/// Returns a transformer that replaces matches of [regexp] with [replacement].
+///
+/// By default, only replaces the first match per line. If [all] is `true`,
+/// replaces all matches in each line instead.
+///
+/// The [replacement] may contain references to the capture groups in
+/// [regexp], using a backslash followed by the group number. Backslashes not
+/// followed by a number return the character immediately following them.
+///
+/// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+/// [new RegExp].
+StreamTransformer<String, String> replace(String regexp, String replacement,
+        {bool all = false,
+        bool caseSensitive = true,
+        bool unicode = false,
+        bool dotAll = false}) =>
+    StreamTransformer.fromBind((stream) => stream.replace(regexp, replacement,
+        all: all,
+        caseSensitive: caseSensitive,
+        unicode: unicode,
+        dotAll: dotAll));
+
+/// Returns a transformer that replaces matches of [regexp] with the result of
+/// calling [replace].
+///
+/// By default, only replaces the first match per line. If [all] is `true`,
+/// replaces all matches in each line instead.
+///
+/// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
+/// [new RegExp].
+StreamTransformer<String, String> replaceMapped(
+        String regexp, String replace(Match match),
+        {bool all = false,
+        bool caseSensitive = true,
+        bool unicode = false,
+        bool dotAll = false}) =>
+    StreamTransformer.fromBind((stream) => stream.replaceMapped(regexp, replace,
+        all: all,
+        caseSensitive: caseSensitive,
+        unicode: unicode,
+        dotAll: dotAll));

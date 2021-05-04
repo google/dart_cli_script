@@ -19,6 +19,7 @@ import 'package:async/async.dart';
 import 'package:charcode/charcode.dart';
 
 import '../script.dart';
+import '../util.dart';
 
 /// Extensions on [Stream<List<int>>] that make it easier to consume the output
 /// of scripts in a human-friendly, easily-to-manipulate manner.
@@ -43,11 +44,15 @@ extension ByteStreamExtensions on Stream<List<int>> {
 
   /// Pipes [this] into [script]'s [stdin].
   ///
+  /// The [other] must be either a [Script] or an object that can be converted
+  /// into a script using the [Script.fromByteTransformer] and
+  /// [Script.fromLineTransformer] constructors.
+  ///
   /// This works like [Script.pipe], treating this stream as a process that
   /// emits only stdout. If [this] emits an error, it's treated the same as an
   /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
   /// and the virtual stream process exits with error code 256.
-  Script operator |(Script script) => _asScript | script;
+  Script operator |(Object script) => _asScript | script;
 
   /// Creates a [Script] representing this stream.
   ///
@@ -58,11 +63,11 @@ extension ByteStreamExtensions on Stream<List<int>> {
   Script get _asScript {
     return Script.fromComponents("stream", () {
       var exitCodeCompleter = Completer<int>.sync();
-      return ScriptComponents(NullStreamSink(),
-          transform(StreamTransformer.fromHandlers(handleDone: (sink) {
-        exitCodeCompleter.complete(0);
-        sink.close();
-      })), Stream.empty(), exitCodeCompleter.future);
+      return ScriptComponents(
+          NullStreamSink(),
+          onDone(() => exitCodeCompleter.complete(0)),
+          Stream.empty(),
+          exitCodeCompleter.future);
     });
   }
 
