@@ -94,4 +94,117 @@ void main() {
           emitsInOrder(["foo", emitsError(isFormatException)]));
     });
   });
+
+  group("xargs", () {
+    group("from a stream", () {
+      test("passes stream entries as arguments", () {
+        var script = Stream.fromIterable(["foo", "bar\nbaz"]).xargs(
+            expectAsync1((args) => expect(args, equals(["foo", "bar\nbaz"]))));
+        expect(script.done, completes);
+      });
+
+      test("only passes maxArgs per callback", () {
+        var count = 0;
+        var script = Stream.fromIterable(["1", "2", "3", "4", "5"]).xargs(
+            expectAsync1((args) {
+              if (count == 0) {
+                expect(args, equals(["1", "2", "3"]));
+              } else {
+                expect(args, equals(["4", "5"]));
+              }
+              count++;
+            }, count: 2),
+            maxArgs: 3);
+        expect(script.done, completes);
+      });
+
+      test("doesn't run a future callback until a previous one returns",
+          () async {
+        var count = 0;
+        var completer = Completer<void>();
+        var script = Stream.fromIterable(["1", "2"]).xargs(
+            expectAsync1((args) {
+              count++;
+              return completer.future;
+            }, count: 2),
+            maxArgs: 1);
+        expect(script.done, completes);
+
+        await pumpEventQueue();
+        expect(count, equals(1));
+
+        completer.complete();
+        await pumpEventQueue();
+        expect(count, equals(2));
+      });
+
+      test("the script doesn't complete until the callbacks are finished",
+          () async {
+        var count = 0;
+        var completers = List.generate(5, (_) => Completer<void>());
+        var script = Stream.fromIterable(["1", "2", "3", "4", "5"]).xargs(
+            expectAsync1((args) => completers[count++].future, count: 5),
+            maxArgs: 1);
+
+        var done = false;
+        script.done.then((_) {
+          done = true;
+        });
+
+        for (var completer in completers) {
+          await pumpEventQueue();
+          expect(done, isFalse);
+          completer.complete();
+        }
+
+        await pumpEventQueue();
+        expect(done, isTrue);
+      });
+
+      test("the script doesn't complete until the callbacks are finished",
+          () async {
+        var count = 0;
+        var completers = List.generate(5, (_) => Completer<void>());
+        var script = Stream.fromIterable(["1", "2", "3", "4", "5"]).xargs(
+            expectAsync1((args) => completers[count++].future, count: 5),
+            maxArgs: 1);
+
+        var done = false;
+        script.done.then((_) {
+          done = true;
+        });
+
+        for (var completer in completers) {
+          await pumpEventQueue();
+          expect(done, isFalse);
+          completer.complete();
+        }
+
+        await pumpEventQueue();
+        expect(done, isTrue);
+      });
+
+      test("the script fails once a callback throws", () async {
+        var script = Stream.fromIterable(["1", "2", "3", "4", "5"])
+            .xargs(expectAsync1((args) => throw "oh no", count: 1), maxArgs: 1);
+        script.stderr.drain();
+        expect(script.exitCode, completion(equals(256)));
+
+        // Give xargs time to run further callbacks if it's going to.
+        await pumpEventQueue();
+      });
+    });
+
+    group("as a script", () {
+      test("converts each line of stdin into an argument", () {
+        var script = Script.capture((_) {
+              print("foo bar");
+              print("baz\nbang");
+            }) |
+            xargs(expectAsync1(
+                (args) => expect(args, equals(["foo bar", "baz", "bang"]))));
+        expect(script.done, completes);
+      });
+    });
+  });
 }

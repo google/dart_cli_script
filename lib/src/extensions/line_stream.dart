@@ -15,6 +15,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:async/async.dart';
 import 'package:charcode/charcode.dart';
 import 'package:string_scanner/string_scanner.dart';
 
@@ -124,5 +125,44 @@ extension LineStreamExtensions on Stream<String> {
     return map((line) => all
         ? line.replaceAllMapped(pattern, replace)
         : line.replaceFirstMapped(pattern, replace));
+  }
+
+  /// Passes the strings emitted by this stream as arguments to [callback].
+  ///
+  /// The [callback] is invoked within a [Script.capture] block, so any stdout
+  /// or stderr it emits will be piped into the returned [Script]'s stdout and
+  /// stderr streams. If any [callback] throws an error or starts a [Script]
+  /// that fails with a non-zero exit code, the returned [Script] will fail as
+  /// well.
+  ///
+  /// Waits for each [callback] to complete before executing the next one. While
+  /// it's possible for callbacks to run in parallel by returning before the
+  /// processing is complete, this is not recommended, as it will cause error and
+  /// output streams from multiple callbacks to become mangled and could cause
+  /// later callbacks to be executed even if earlier ones failed.
+  ///
+  /// If [maxArgs] is passed, this invokes [callback] multiple times, passing at
+  /// most [maxArgs] arguments to each invocation. Otherwise, it passes all
+  /// arguments to a single invocation.
+  ///
+  /// If [name] is passed, it's used as the name of the spawned script.
+  ///
+  /// See also [LineStreamExtensions.xargs], which takes arguments from stdin
+  /// rather than from a string stream.
+  Script xargs(FutureOr<void> callback(List<String> args),
+      {int? maxArgs, String? name}) {
+    if (maxArgs != null && maxArgs < 1) {
+      throw RangeError.range(maxArgs, 1, null, 'maxArgs');
+    }
+
+    return Script.capture((stdin) async {
+      if (maxArgs == null) {
+        await callback(await toList());
+      } else {
+        await for (var slice in slices(maxArgs)) {
+          await callback(slice);
+        }
+      }
+    }, name: name ?? 'xargs');
   }
 }
