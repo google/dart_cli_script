@@ -21,6 +21,7 @@ import 'src/exception.dart';
 import 'src/extensions/byte_stream.dart';
 import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
+import 'src/stdio.dart';
 
 export 'src/extensions/byte_list.dart';
 export 'src/extensions/byte_stream.dart';
@@ -30,7 +31,7 @@ export 'src/extensions/line_stream.dart';
 export 'src/extensions/string.dart';
 export 'src/exception.dart';
 export 'src/parse_args.dart' show arg;
-export 'src/script.dart';
+export 'src/script.dart' hide scriptNameKey;
 export 'src/stdio.dart' hide stdoutKey, stderrKey;
 export 'src/temp.dart';
 
@@ -182,6 +183,22 @@ Future<bool> check(String executableAndArgs,
             environment: environment,
             includeParentEnvironment: includeParentEnvironment)
         .success;
+
+/// Prints [message] to stderr and exits the current script.
+///
+/// Within a [Script.capture] block, this throws a [ScriptException] that causes
+/// the script to exit with the given [exitCode]. Elsewhere, it exits the Dart
+/// process entirely.
+Never fail(String message, {int exitCode = 1}) {
+  currentStderr.writeln(message);
+
+  var scriptName = Zone.current[scriptNameKey];
+  if (scriptName is String) {
+    throw ScriptException(scriptName, exitCode);
+  } else {
+    exit(exitCode);
+  }
+}
 
 /// Returns a transformer that emits only the the elements of the source stream
 /// that match [regexp].

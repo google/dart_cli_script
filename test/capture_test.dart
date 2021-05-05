@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 import 'package:cli_script/cli_script.dart';
+import 'package:cli_script/cli_script.dart' as cli_script;
 
 import 'util.dart';
 
@@ -104,6 +105,12 @@ void main() {
     expect(script.stderr.lines, emitsInOrder(["Error in capture:", "oh no"]));
   });
 
+  test("prints fail's message to stderr", () {
+    var script = Script.capture((_) => cli_script.fail("oh no"));
+    expect(script.done, throwsA(anything));
+    expect(script.stderr.lines, emitsInOrder(["oh no", emitsDone]));
+  });
+
   group("exitCode", () {
     test("completes with 0 when the capture exits successfully", () {
       expect(Script.capture((_) {}).exitCode, completion(equals(0)));
@@ -113,6 +120,13 @@ void main() {
       var script = Script.capture((_) => throw "oh no");
       script.stderr.drain();
       expect(script.exitCode, completion(equals(256)));
+    });
+
+    test("completes with the given exit code when fail() is called", () {
+      var script =
+          Script.capture((_) => cli_script.fail("oh no", exitCode: 42));
+      script.stderr.drain();
+      expect(script.exitCode, completion(equals(42)));
     });
 
     group("forwards a child script's exit code", () {
