@@ -19,7 +19,12 @@ import 'package:test_descriptor/test_descriptor.dart' as d;
 
 import 'package:cli_script/cli_script.dart';
 
-var _scriptCount = 0;
+/// The next unique number to use to use when generating a [uid].
+var _nextId = 0;
+
+/// Returns an alphanumeric-with-underscores string that will be unique within
+/// the scope of the current test file.
+String uid() => "cli_script_test_${_nextId++}";
 
 /// Runs the Dart code [code] as a subprocess [Script].
 Script dartScript(String code,
@@ -28,8 +33,8 @@ Script dartScript(String code,
     String? workingDirectory,
     Map<String, String>? environment,
     bool includeParentEnvironment = true}) {
-  var script = d.path("script_${_scriptCount++}.dart");
-  File(script).writeAsString(code);
+  var script = d.path("${uid()}.dart");
+  File(script).writeAsStringSync(code);
 
   return Script(arg(Platform.executable),
       args: [...Platform.executableArguments, script, ...?args],
@@ -55,7 +60,12 @@ Script mainScript(String code,
       Future<void> main() async {
         $code
       }
-    """);
+    """,
+        args: args,
+        name: name,
+        workingDirectory: workingDirectory,
+        environment: environment,
+        includeParentEnvironment: includeParentEnvironment);
 
 /// Returns a matcher that verifies that the object is a [ScriptException] with
 /// the given exit code.

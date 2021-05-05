@@ -22,6 +22,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
+import 'environment.dart';
 import 'exception.dart';
 import 'parse_args.dart';
 import 'stdio.dart';
@@ -148,11 +149,20 @@ class Script {
 
     return Script.fromComponents(name ?? p.basename(parsedExecutableAndArgs[0]),
         () async {
+      if (includeParentEnvironment) {
+        environment = environment == null
+            ? env
+            // Use [withEnv] to ensure that the copied environment correctly
+            // overrides the parent [env], including handling case-insensitive
+            // keys on Windows.
+            : withEnv(() => env, environment!); // dart-lang/language#1536
+      }
+
       var process = await Process.start(parsedExecutableAndArgs[0],
           [...parsedExecutableAndArgs.skip(1), ...?args],
           workingDirectory: workingDirectory,
           environment: environment,
-          includeParentEnvironment: includeParentEnvironment);
+          includeParentEnvironment: false);
 
       return ScriptComponents(
           process.stdin, process.stdout, process.stderr, process.exitCode);
