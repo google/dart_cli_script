@@ -15,14 +15,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'src/exception.dart';
 import 'src/extensions/byte_stream.dart';
 import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
-import 'src/util.dart';
 
 export 'src/extensions/byte_list.dart';
 export 'src/extensions/byte_stream.dart';
@@ -120,6 +118,8 @@ Future<void> run(String executableAndArgs,
 /// All other arguments are forwarded to [Process.start].
 ///
 /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
+///
+/// See also [Script.output].
 Future<String> output(String executableAndArgs,
         {List<String>? args,
         String? name,
@@ -132,13 +132,12 @@ Future<String> output(String executableAndArgs,
             workingDirectory: workingDirectory,
             environment: environment,
             includeParentEnvironment: includeParentEnvironment)
-        .stdout
-        .text;
+        .output;
 
 /// Runs an executable and returns a stream of lines it prints to stdout.
 ///
 /// The returned stream emits a [ScriptException] if the executable returns a
-/// non-zero exit code (unlike [Script.stdout].
+/// non-zero exit code (unlike [Script.stdout]).
 ///
 /// The [executableAndArgs] and [args] arguments are parsed as described in [the
 /// README]. The [name] is a human-readable identifier for this script that's
@@ -146,25 +145,21 @@ Future<String> output(String executableAndArgs,
 /// All other arguments are forwarded to [Process.start].
 ///
 /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
+///
+/// See also [Script.lines].
 Stream<String> lines(String executableAndArgs,
-    {List<String>? args,
-    String? name,
-    String? workingDirectory,
-    Map<String, String>? environment,
-    bool includeParentEnvironment = true}) {
-  var script = Script(executableAndArgs,
-      args: args,
-      name: name,
-      workingDirectory: workingDirectory,
-      environment: environment,
-      includeParentEnvironment: includeParentEnvironment);
-
-  // Because the user definitely isn't able to listen to [script.done] for
-  // errors themselves, we always forward its potential [ScriptException]
-  // through the returned stream.
-  return StreamGroup.merge(
-      [script.stdout.lines, Stream.fromFuture(script.done).withoutData()]);
-}
+        {List<String>? args,
+        String? name,
+        String? workingDirectory,
+        Map<String, String>? environment,
+        bool includeParentEnvironment = true}) =>
+    Script(executableAndArgs,
+            args: args,
+            name: name,
+            workingDirectory: workingDirectory,
+            environment: environment,
+            includeParentEnvironment: includeParentEnvironment)
+        .lines;
 
 /// Runs an executable and returns whether it returns exit code 0.
 ///
