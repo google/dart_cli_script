@@ -22,6 +22,7 @@ import 'src/extensions/byte_stream.dart';
 import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
 
+export 'src/environment.dart';
 export 'src/extensions/byte_list.dart';
 export 'src/extensions/byte_stream.dart';
 export 'src/extensions/chunk_list.dart';

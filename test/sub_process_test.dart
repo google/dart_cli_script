@@ -13,6 +13,8 @@
 // limitations under the License.
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:test/test.dart';
 
@@ -96,6 +98,63 @@ void main() {
     });
   });
 
+  group("subprocess environment", () {
+    test("defaults to the parent environment", () {
+      expect(_getSubprocessEnvironment(),
+          completion(equals(Platform.environment)));
+    });
+
+    test("includes modifications to env", () {
+      var varName = uid();
+      env[varName] = "value";
+      expect(_getSubprocessEnvironment(),
+          completion(containsPair(varName, "value")));
+    });
+
+    test("includes scoped modifications to env", () {
+      var varName = uid();
+      withEnv(() {
+        expect(_getSubprocessEnvironment(),
+            completion(containsPair(varName, "value")));
+      }, {varName: "value"});
+    });
+
+    test("includes values from the environment parameter", () {
+      var varName = uid();
+      expect(_getSubprocessEnvironment(environment: {varName: "value"}),
+          completion(containsPair(varName, "value")));
+    });
+
+    test("the environment parameter overrides env", () {
+      var varName = uid();
+      env[varName] = "outer value";
+      expect(_getSubprocessEnvironment(environment: {varName: "inner value"}),
+          completion(containsPair(varName, "inner value")));
+    });
+
+    group("with includeParentEnvironment: false", () {
+      // It would be nice to test that the environment is fully empty in the
+      // subprocess, but some environment variables unavoidably exist when
+      // spawning a process (at least on Linux).
+
+      test("ignores env", () {
+        var varName = uid();
+        env[varName] = "value";
+        expect(_getSubprocessEnvironment(includeParentEnvironment: false),
+            completion(isNot(contains(varName))));
+      });
+
+      test("uses the environment parameter", () {
+        var varName = uid();
+        expect(
+            _getSubprocessEnvironment(
+                environment: {varName: "value"},
+                includeParentEnvironment: false),
+            completion(containsPair(varName, "value")));
+      });
+    });
+  });
+
   group("output", () {
     test("returns the script's output without a trailing newline", () {
       expect(
@@ -162,3 +221,16 @@ void stdoutOrStderr(String name, Stream<List<int>> stream(Script script)) {
     });
   });
 }
+
+/// Runs a Dart subprocess and returns the value of `Process.environment` in
+/// that subprocess.
+Future<Map<String, String>> _getSubprocessEnvironment(
+        {Map<String, String>? environment,
+        bool includeParentEnvironment = true}) async =>
+    (json.decode(await mainScript(
+                "stdout.writeln(json.encode(Platform.environment));",
+                environment: environment,
+                includeParentEnvironment: includeParentEnvironment)
+            .stdout
+            .text) as Map)
+        .cast<String, String>();
