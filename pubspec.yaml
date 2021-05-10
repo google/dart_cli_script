@@ -23,4 +23,4 @@ dependency_overrides:
   async:
     git:
       url: git://github.com/dart-lang/async
-      ref: master
+      ref: slices

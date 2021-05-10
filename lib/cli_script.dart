@@ -15,6 +15,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'src/exception.dart';
@@ -328,3 +329,46 @@ IOSink write(String path) => File(path).openWrite();
 /// }
 /// ```
 IOSink append(String path) => File(path).openWrite(mode: FileMode.append);
+
+/// Executes [callback] with arguments from standard input.
+///
+/// This converts each line of standard input into a separate argument that's
+/// then passed to [callback]. Note: for consistency with other string
+/// transformations in `cli_script`, this *only* splits on newlines, unlike the
+/// UNIX `xargs` command which splits on any whitespace.
+///
+/// The [callback] is invoked within a [Script.capture] block, so any stdout or
+/// stderr it emits will be piped into the returned [Script]'s stdout and stderr
+/// streams. If any [callback] throws an error or starts a [Script] that fails
+/// with a non-zero exit code, the returned [Script] will fail as well.
+///
+/// Waits for each [callback] to complete before executing the next one. While
+/// it's possible for callbacks to run in parallel by returning before the
+/// processing is complete, this is not recommended, as it will cause error and
+/// output streams from multiple callbacks to become mangled and could cause
+/// later callbacks to be executed even if earlier ones failed.
+///
+/// If [maxArgs] is passed, this invokes [callback] multiple times, passing at
+/// most [maxArgs] arguments to each invocation. Otherwise, it passes all
+/// arguments to a single invocation.
+///
+/// If [name] is passed, it's used as the name of the spawned script.
+///
+/// See also [LineStreamExtensions.xargs], which takes arguments directly from
+/// an existing string stream rather than stdin.
+Script xargs(FutureOr<void> callback(List<String> args),
+    {int? maxArgs, String? name}) {
+  if (maxArgs != null && maxArgs < 1) {
+    throw RangeError.range(maxArgs, 1, null, 'maxArgs');
+  }
+
+  return Script.capture((stdin) async {
+    if (maxArgs == null) {
+      await callback(await stdin.lines.toList());
+    } else {
+      await for (var slice in stdin.lines.slices(maxArgs)) {
+        await callback(slice);
+      }
+    }
+  }, name: name ?? 'xargs');
+}
