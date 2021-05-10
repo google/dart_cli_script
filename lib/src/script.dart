@@ -30,6 +30,10 @@ import 'stdio.dart';
 import 'stdio_group.dart';
 import 'util.dart';
 
+/// An opaque key for the Zone value that contains the name of the current
+/// [Script].
+final scriptNameKey = #_captureName;
+
 /// A unit of execution that behaves like a process, with [stdin], [stdout], and
 /// [stderr] streams that ultimately produces an [exitCode] indicating success
 /// or failure.
@@ -209,6 +213,7 @@ class Script {
       {String? name}) {
     _checkCapture();
 
+    var scriptName = name ?? "capture";
     var childScripts = FutureGroup<void>();
     var stdinController = StreamController<List<int>>();
     var stdoutGroup = StdioGroup();
@@ -243,6 +248,7 @@ class Script {
         },
         zoneValues: {
           #_childScripts: childScripts,
+          scriptNameKey: scriptName,
           stdoutKey: stdoutGroup,
           stderrKey: stderrGroup
         },
@@ -256,7 +262,7 @@ class Script {
           }
         }));
 
-    return Script._(name ?? "capture", stdinController.sink, stdoutGroup.stream,
+    return Script._(scriptName, stdinController.sink, stdoutGroup.stream,
         stderrGroup.stream, exitCodeCompleter.future);
   }
 
