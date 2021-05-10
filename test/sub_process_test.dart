@@ -154,6 +154,30 @@ void main() {
       });
     });
   });
+
+  group("output", () {
+    test("returns the script's output without a trailing newline", () {
+      expect(
+          mainScript("print('hello!');").output, completion(equals("hello!")));
+    });
+
+    test("completes with a ScriptException if the script fails", () {
+      expect(mainScript("print('hello!'); exitCode = 12;").output,
+          throwsScriptException(12));
+    });
+  });
+
+  group("lines", () {
+    test("returns the script's stdout lines", () {
+      expect(mainScript(r"print('hello\nthere!');").lines,
+          emitsInOrder(["hello", "there!", emitsDone]));
+    });
+
+    test("emits a ScriptException if the script fails", () {
+      expect(mainScript("print('hello!'); exitCode = 12;").lines,
+          emitsThrough(emitsError(isScriptException(12))));
+    });
+  });
 }
 
 /// Defines tests for either stdout or for stderr.

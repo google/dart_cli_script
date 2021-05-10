@@ -24,6 +24,7 @@ import 'package:stack_trace/stack_trace.dart';
 
 import 'environment.dart';
 import 'exception.dart';
+import 'extensions/byte_stream.dart';
 import 'parse_args.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
@@ -517,6 +518,20 @@ class Script {
       _outputCloser.close().catchError((_) {});
     });
   }
+
+  /// Returns this script's stdout, with trailing newlines removed.
+  ///
+  /// Like `stdout.text`, but throws a [ScriptException] if the executable
+  /// returns a non-zero exit code.
+  Future<String> get output async =>
+      (await Future.wait([stdout.text, done]))[0] as String;
+
+  /// Returns a stream of lines [this] prints to stdout.
+  ///
+  /// Like [stdout.lines], but emits a [ScriptException] if the executable
+  /// returns a non-zero exit code.
+  Stream<String> get lines =>
+      StreamGroup.merge([stdout.lines, Stream.fromFuture(done).withoutData()]);
 
   /// Returns a stream that combines both [stdout] and [stderr] the same way
   /// they'd be displayed in a terminal.
