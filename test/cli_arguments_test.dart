@@ -244,6 +244,10 @@ void main() {
         expect(arg("foo bar: 'baz'"), equals(r"foo\ bar:\ \'baz\'"));
       });
     });
+
+    test("quotes multiple arguments", () {
+      expect(args(["foo", " ", "", "*"]), equals(r'foo \  "" \*'));
+    });
   });
 }
 
