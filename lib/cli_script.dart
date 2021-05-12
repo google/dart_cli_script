@@ -24,6 +24,7 @@ import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
 import 'src/stdio.dart';
 
+export 'src/cli_arguments.dart' show arg;
 export 'src/environment.dart';
 export 'src/extensions/byte_list.dart';
 export 'src/extensions/byte_stream.dart';
@@ -32,7 +33,6 @@ export 'src/extensions/line_list.dart';
 export 'src/extensions/line_stream.dart';
 export 'src/extensions/string.dart';
 export 'src/exception.dart';
-export 'src/parse_args.dart' show arg;
 export 'src/script.dart' hide scriptNameKey;
 export 'src/stdio.dart' hide stdoutKey, stderrKey;
 export 'src/temp.dart';
