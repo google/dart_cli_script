@@ -16,6 +16,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
+import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
 import 'src/exception.dart';
@@ -371,4 +374,15 @@ Script xargs(FutureOr<void> callback(List<String> args),
       }
     }
   }, name: name ?? 'xargs');
+}
+
+/// Returns a stream of all paths on disk matching [glob].
+///
+/// The glob syntax is the same as that provided by the [Glob] package.
+///
+/// If [root] is passed, it's used as the root directory for relative globs.
+Stream<String> ls(String glob, {String? root}) {
+  var absolute = p.isAbsolute(glob);
+  return Glob(glob).list(root: root).map(
+      (entity) => absolute ? entity.path : p.relative(entity.path, from: root));
 }
