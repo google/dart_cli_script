@@ -32,12 +32,12 @@ class CliArguments {
   /// into a list of separate arguments.
   ///
   /// If [glob] is `true`, this will parse arguments (outside of quotes) as
-  /// [Glob]s and resolve those globs when [arguments] is called.
+  /// [Glob]s and resolve those globs when [arguments] is called. It defaults to
+  /// `false` on Windows, since the Windows convention is to let each program
+  /// handle its own glob expansion.
   ///
   /// Throws a [FormatException] if [argString] is malformed.
   factory CliArguments.parse(String argString, {bool? glob}) {
-    /// Don't expand globs on Windows by default, since on Windows the
-    /// convention is to let each program handle its own glob expansion.
     glob ??= !Platform.isWindows;
 
     var scanner = StringScanner(argString);

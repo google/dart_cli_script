@@ -30,9 +30,12 @@ void main() {
         expect(() => CliArguments.parse("   "), throwsFormatException);
       });
 
-      test("for a string containing an invalid glob", () {
-        expect(() => CliArguments.parse("a ["), throwsFormatException);
-      }, testOn: "!windows");
+      onPosixOrWithGlobTrue((glob) {
+        test("for a string containing an invalid glob", () {
+          expect(() => CliArguments.parse("a [", glob: glob),
+              throwsFormatException);
+        });
+      });
     });
 
     group("a single argument", () {
@@ -110,6 +113,12 @@ void main() {
         expect(await _resolve("\"foo bar\"baz'bip bop'"),
             equals(["foo barbazbip bop"]));
       });
+
+      onWindowsOrWithGlobFalse((glob) {
+        test("that's an invalid glob", () async {
+          expect(await _resolve("a [", glob: glob), equals(["a", "["]));
+        });
+      });
     });
 
     group("multiple arguments", () {
@@ -129,42 +138,57 @@ void main() {
   });
 
   group("globbing", () {
-    test("lists files that match the glob", () async {
-      await d.file("foo.txt").create();
-      await d.file("bar.txt").create();
-      await d.file("baz.zip").create();
+    onPosixOrWithGlobTrue((glob) {
+      test("lists files that match the glob", () async {
+        await d.file("foo.txt").create();
+        await d.file("bar.txt").create();
+        await d.file("baz.zip").create();
 
-      expect(await _resolve("ls *.txt"), equals(["ls", "foo.txt", "bar.txt"]));
+        expect(await _resolve("ls *.txt", glob: glob),
+            equals(["ls", "foo.txt", "bar.txt"]));
+      });
+
+      test("an absolute glob expands to absolute paths", () async {
+        await d.file("foo.txt").create();
+        await d.file("bar.txt").create();
+        await d.file("baz.zip").create();
+
+        var pattern = p.join(Glob.quote(d.sandbox), "*.txt");
+        expect(await _resolve("ls $pattern", glob: glob),
+            equals(["ls", d.path("foo.txt"), d.path("bar.txt")]));
+      });
+
+      test("ignores glob characters in quotes", () async {
+        await d.file("foo.txt").create();
+        await d.file("bar.txt").create();
+        await d.file("baz.zip").create();
+        expect(
+            await _resolve("ls '*.txt'", glob: glob), equals(["ls", "*.txt"]));
+      });
+
+      test("ignores backslash-escaped glob characters", () async {
+        await d.file("foo.txt").create();
+        await d.file("bar.txt").create();
+        await d.file("baz.zip").create();
+        expect(
+            await _resolve(r"ls \*.txt", glob: glob), equals(["ls", "*.txt"]));
+      });
+
+      test("returns plain strings for globs that don't match", () async {
+        expect(await _resolve("ls *.txt", glob: glob), equals(["ls", "*.txt"]));
+      });
     });
 
-    test("an absolute glob expands to absolute paths", () async {
-      await d.file("foo.txt").create();
-      await d.file("bar.txt").create();
-      await d.file("baz.zip").create();
+    onWindowsOrWithGlobFalse((glob) {
+      test("ignores glob characters", () async {
+        await d.file("foo.txt").create();
+        await d.file("bar.txt").create();
+        await d.file("baz.zip").create();
 
-      var glob = p.join(Glob.quote(d.sandbox), "*.txt");
-      expect(await _resolve("ls $glob"),
-          equals(["ls", d.path("foo.txt"), d.path("bar.txt")]));
+        expect(await _resolve("ls *.txt", glob: glob), equals(["ls", "*.txt"]));
+      });
     });
-
-    test("ignores glob characters in quotes", () async {
-      await d.file("foo.txt").create();
-      await d.file("bar.txt").create();
-      await d.file("baz.zip").create();
-      expect(await _resolve("ls '*.txt'"), equals(["ls", "*.txt"]));
-    });
-
-    test("ignores backslash-escaped glob characters", () async {
-      await d.file("foo.txt").create();
-      await d.file("bar.txt").create();
-      await d.file("baz.zip").create();
-      expect(await _resolve(r"ls \*.txt"), equals(["ls", "*.txt"]));
-    });
-
-    test("returns plain strings for globs that don't match", () async {
-      expect(await _resolve("ls *.txt"), equals(["ls", "*.txt"]));
-    });
-  }, testOn: "!windows");
+  });
 
   group("escaping", () {
     test("quotes an empty string", () {
@@ -223,7 +247,21 @@ void main() {
   });
 }
 
-Future<List<String>> _resolve(String executableAndArgs) async {
-  var args = CliArguments.parse(executableAndArgs);
+/// Runs [callback] in two groups: one restricted to Windows with `glob: null`,
+/// and one on all OSes with `glob: false`.
+void onWindowsOrWithGlobFalse(void callback(bool? glob)) {
+  group("on Windows", () => callback(null), testOn: "windows");
+  group("with glob: false", () => callback(false));
+}
+
+/// Runs [callback] in two groups: one restricted to non-Windows OSes with
+/// `glob: null`, and one on all OSes with `glob: true`.
+void onPosixOrWithGlobTrue(void callback(bool? glob)) {
+  group("on non-Windows OSes", () => callback(null), testOn: "!windows");
+  group("with glob: true", () => callback(true));
+}
+
+Future<List<String>> _resolve(String executableAndArgs, {bool? glob}) async {
+  var args = CliArguments.parse(executableAndArgs, glob: glob);
   return [args.executable, ...await args.arguments(root: d.sandbox)];
 }
