@@ -168,7 +168,7 @@ class _Argument {
 }
 
 /// Converts [argument] to a string and escapes it so it's parsed as a single
-/// argument with no glob expansion by [parseArgs].
+/// argument with no glob expansion by [new Script] and related functions.
 ///
 /// For example, `run("cp -r ${arg(source)} build/")`.
 String arg(Object argument) {
@@ -197,3 +197,10 @@ String arg(Object argument) {
   }
   return buffer.toString();
 }
+
+/// Converts all elements of [arguments] to strings and escapes them so they're
+/// parsed as separate arguments with no glob expansion by [new Script] and
+/// related functions.
+///
+/// For example, `run("cp -r ${args(directories)} build/")`.
+String args(Iterable<Object> arguments) => arguments.map(arg).join(" ");
