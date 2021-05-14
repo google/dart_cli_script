@@ -15,6 +15,7 @@ scripting context.
 * [Dartiness](#dartiness)
 * [Other Features](#other-features)
   * [Argument Parsing](#argument-parsing)
+    * [Globs](#globs)
   * [Search and Replace](#search-and-replace)
 
 While `cli_script` can be used as a library in any Dart application, its primary
@@ -332,6 +333,22 @@ The arguments from `executableAndArgs` always come before the arguments in
 ${arg(source)} build/")`.
 
 [`run()`]: https://pub.dev/documentation/cli_script/latest/cli_script/run.html
+
+##### Globs
+
+On Linux and Mac OS, the `executableAndArgs` string also automatically performs
+glob expansions. This means it takes arguments like `*.txt` and expands them
+into a list of all matching files. It uses Dart's [`glob` package] to expand
+these globs, so it uses the same [syntax] as that package.
+
+[`glob` package]: https://pub.dev/packages/glob
+[syntax]: https://pub.dev/packages/glob#syntax
+
+Just like in a shell, globs aren't used if they appear within quoted strings or
+if their active characters are backslash-escaped (so `find -name '*.dart'` or
+`find -name \*.dart` will pass the string `"*.dart"` to the `find` process).
+Also, if a glob doesn't match any files, it'll be passed to the child process as
+a normal argument rather than just omitting the argument.
 
 #### Search and Replace
 

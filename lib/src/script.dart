@@ -22,10 +22,10 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
+import 'cli_arguments.dart';
 import 'environment.dart';
 import 'exception.dart';
 import 'extensions/byte_stream.dart';
-import 'parse_args.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
 import 'util.dart';
@@ -150,10 +150,10 @@ class Script {
       String? workingDirectory,
       Map<String, String>? environment,
       bool includeParentEnvironment = true}) {
-    var parsedExecutableAndArgs = parseArgs(executableAndArgs);
+    var parsedExecutableAndArgs = CliArguments.parse(executableAndArgs);
 
-    return Script.fromComponents(name ?? p.basename(parsedExecutableAndArgs[0]),
-        () async {
+    return Script.fromComponents(
+        name ?? p.basename(parsedExecutableAndArgs.executable), () async {
       if (includeParentEnvironment) {
         environment = environment == null
             ? env
@@ -163,8 +163,12 @@ class Script {
             : withEnv(() => env, environment!); // dart-lang/language#1536
       }
 
-      var process = await Process.start(parsedExecutableAndArgs[0],
-          [...parsedExecutableAndArgs.skip(1), ...?args],
+      var process = await Process.start(
+          parsedExecutableAndArgs.executable,
+          [
+            ...await parsedExecutableAndArgs.arguments(root: workingDirectory),
+            ...?args
+          ],
           workingDirectory: workingDirectory,
           environment: environment,
           includeParentEnvironment: false);
