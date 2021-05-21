@@ -1,5 +1,9 @@
 name: cli_script
 version: 0.1.0
+description:
+  Write scripts that call subprocesses with the ease of shell scripting and the
+  power of Dart.
+repository: https://github.com/google/dart_cli_script
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
