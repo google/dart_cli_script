@@ -205,8 +205,8 @@ Never fail(String message, {int exitCode = 1}) {
   }
 }
 
-/// Returns a transformer that emits only the the elements of the source stream
-/// that match [regexp].
+/// Returns a transformer that emits only the elements of the source stream that
+/// match [regexp].
 ///
 /// If [exclude] is `true`, instead returns the elements of the source stream
 /// that *don't* match [regexp].
