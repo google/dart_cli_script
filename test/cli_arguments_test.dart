@@ -144,8 +144,9 @@ void main() {
         await d.file("bar.txt").create();
         await d.file("baz.zip").create();
 
-        expect(await _resolve("ls *.txt", glob: glob),
-            equals(["ls", "foo.txt", "bar.txt"]));
+        var args = await _resolve("ls *.txt", glob: glob);
+        expect(args.first, equals("ls"));
+        expect(args.sublist(1), unorderedEquals(["foo.txt", "bar.txt"]));
       });
 
       test("an absolute glob expands to absolute paths", () async {
@@ -154,8 +155,10 @@ void main() {
         await d.file("baz.zip").create();
 
         var pattern = p.join(Glob.quote(d.sandbox), "*.txt");
-        expect(await _resolve("ls $pattern", glob: glob),
-            equals(["ls", d.path("foo.txt"), d.path("bar.txt")]));
+        var args = await _resolve("ls $pattern", glob: glob);
+        expect(args.first, equals("ls"));
+        expect(args.sublist(1),
+            unorderedEquals([d.path("foo.txt"), d.path("bar.txt")]));
       });
 
       test("ignores glob characters in quotes", () async {
