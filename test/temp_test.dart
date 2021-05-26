@@ -17,6 +17,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart' as d;
 
 import 'package:cli_script/cli_script.dart';
 
@@ -60,9 +61,8 @@ void main() {
     });
 
     test("puts the path in parent", () {
-      withTempPath(
-          (path) => expect(p.isWithin(Directory.current.path, path), isTrue),
-          parent: Directory.current.path);
+      withTempPath((path) => expect(p.isWithin(d.sandbox, path), isTrue),
+          parent: d.sandbox);
     });
 
     group("returns the callback's return value", () {
@@ -180,8 +180,8 @@ void main() {
 
     test("puts the path in parent", () async {
       await withTempPathAsync(
-          (path) => expect(p.isWithin(Directory.current.path, path), isTrue),
-          parent: Directory.current.path);
+          (path) => expect(p.isWithin(d.sandbox, path), isTrue),
+          parent: d.sandbox);
     });
 
     test("returns the callback's return value", () {
@@ -269,9 +269,8 @@ void main() {
     });
 
     test("puts the directory in parent", () {
-      withTempDir(
-          (dir) => expect(p.isWithin(Directory.current.path, dir), isTrue),
-          parent: Directory.current.path);
+      withTempDir((dir) => expect(p.isWithin(d.sandbox, dir), isTrue),
+          parent: d.sandbox);
     });
 
     group("returns the callback's return value", () {
@@ -386,8 +385,8 @@ void main() {
 
     test("puts the directory in parent", () async {
       await withTempDirAsync(
-          (dir) => expect(p.isWithin(Directory.current.path, dir), isTrue),
-          parent: Directory.current.path);
+          (dir) => expect(p.isWithin(d.sandbox, dir), isTrue),
+          parent: d.sandbox);
     });
 
     test("returns the callback's return value", () {
