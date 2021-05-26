@@ -103,13 +103,13 @@ void main() {
   });
 
   group("on Windows", () {
-    test("environment varibles are accessed case-insensitively", () {
+    test("environment variables are accessed case-insensitively", () {
       var varName = uid();
       env[varName] = "value";
       expect(env, containsPair(varName.toUpperCase(), "value"));
     });
 
-    test("environment varibles are removed case-insensitively", () {
+    test("environment variables are removed case-insensitively", () {
       var varName = uid();
       env[varName] = "value";
       env.remove(varName.toUpperCase());
@@ -117,7 +117,7 @@ void main() {
       expect(env, isNot(contains(varName.toUpperCase())));
     });
 
-    test("environment varibles are overridden case-insensitively", () {
+    test("environment variables are overridden case-insensitively", () {
       var varName = uid();
       env[varName] = "outer value";
       env.remove(varName.toUpperCase());
