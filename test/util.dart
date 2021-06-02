@@ -28,7 +28,7 @@ String uid() => "cli_script_test_${_nextId++}";
 
 /// Runs the Dart code [code] as a subprocess [Script].
 Script dartScript(String code,
-    {List<String>? args,
+    {Iterable<String>? args,
     String? name,
     String? workingDirectory,
     Map<String, String>? environment,
@@ -47,7 +47,7 @@ Script dartScript(String code,
 /// A shorthand for [dartScript] that runs [code] in the body of an async
 /// `main()` method with access to `dart:async`, `dart:convert`, and `dart:io`.
 Script mainScript(String code,
-        {List<String>? args,
+        {Iterable<String>? args,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,

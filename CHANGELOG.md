@@ -1,6 +1,6 @@
 ## 0.1.1
 
-* No user-visible changes.
+* Accept `Iterable<String>` instead of `List<String>` for subprocess arguments.
 
 ## 0.1.0
 
