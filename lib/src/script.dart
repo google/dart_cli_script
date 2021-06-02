@@ -29,6 +29,7 @@ import 'extensions/byte_stream.dart';
 import 'stdio.dart';
 import 'stdio_group.dart';
 import 'util.dart';
+import 'util/delayed_completer.dart';
 
 /// An opaque key for the Zone value that contains the name of the current
 /// [Script].
@@ -130,7 +131,12 @@ class Script {
       _doneCompleter.future.catchError((_) {});
 
   /// The completer for [done].
-  final _doneCompleter = Completer<void>();
+  ///
+  /// This is delayed so that [done] doesn't fire until [stdout] and [stderr]
+  /// have a chance to be automatically propagated to the enclosing context.
+  /// This way, even if a non-zero exit code causes the entire script to exit,
+  /// there will still be time to write stdio.
+  final _doneCompleter = DelayedCompleter<void>.sync();
 
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
@@ -388,9 +394,6 @@ class Script {
       String name, FutureOr<ScriptComponents> callback()) {
     _checkCapture();
 
-    // TODO: there are too few guarantees about when a stream will actually get
-    // listened. Even piping it doesn't immediately listen. I think we need to
-    // just check access instead.
     var stdoutCompleter = StreamCompleter<List<int>>();
     var stdout = stdoutCompleter.stream;
 
@@ -464,6 +467,17 @@ class Script {
 
       if (!_stderrAccessed) {
         _pipeUnlistenedStream(this.stderr, stderrKey, io.stderr);
+      }
+
+      // [_doneCompleter] has been waiting to fire until the streams have a
+      // chance to be forwarded. If both [stdout] and [stderr] have already been
+      // accessed by this point, there's no need to wait longer for their events
+      // to propagate further so we mark [_doneCompleter] as ready
+      // synchronously.
+      if (_stdoutAccessed && _stdoutAccessed) {
+        _doneCompleter.ready();
+      } else {
+        Timer.run(_doneCompleter.ready);
       }
     });
 
