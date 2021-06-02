@@ -149,7 +149,8 @@ class Script {
       String? name,
       String? workingDirectory,
       Map<String, String>? environment,
-      bool includeParentEnvironment = true}) {
+      bool includeParentEnvironment = true,
+      bool runInShell = false}) {
     var parsedExecutableAndArgs = CliArguments.parse(executableAndArgs);
 
     return Script.fromComponents(
@@ -171,7 +172,8 @@ class Script {
           ],
           workingDirectory: workingDirectory,
           environment: environment,
-          includeParentEnvironment: false);
+          includeParentEnvironment: false,
+          runInShell: runInShell);
 
       return ScriptComponents(
           process.stdin, process.stdout, process.stderr, process.exitCode);
