@@ -101,7 +101,7 @@ void wrapMain(FutureOr<void> callback(),
 ///
 /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
 Future<void> run(String executableAndArgs,
-        {List<String>? args,
+        {Iterable<String>? args,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
@@ -127,7 +127,7 @@ Future<void> run(String executableAndArgs,
 ///
 /// See also [Script.output].
 Future<String> output(String executableAndArgs,
-        {List<String>? args,
+        {Iterable<String>? args,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
@@ -154,7 +154,7 @@ Future<String> output(String executableAndArgs,
 ///
 /// See also [Script.lines].
 Stream<String> lines(String executableAndArgs,
-        {List<String>? args,
+        {Iterable<String>? args,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
@@ -176,7 +176,7 @@ Stream<String> lines(String executableAndArgs,
 ///
 /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
 Future<bool> check(String executableAndArgs,
-        {List<String>? args,
+        {Iterable<String>? args,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
