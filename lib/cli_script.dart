@@ -76,16 +76,11 @@ void wrapMain(FutureOr<void> callback(),
       exit(254);
     }
 
-    // If a script failed, wait a macrotask before exiting so that its stderr
-    // has a chance to be piped through to the top level.
-    Timer.run(() {
-      if (printScriptException) {
-        stderr.writeln(error);
-        stderr.writeln(chain);
-      }
-
-      exit(error.exitCode);
-    });
+    if (printScriptException) {
+      stderr.writeln(error);
+      stderr.writeln(chain);
+    }
+    exit(error.exitCode);
   }, when: chainStackTraces);
 }
 
