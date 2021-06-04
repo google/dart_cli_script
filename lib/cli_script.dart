@@ -105,13 +105,15 @@ Future<void> run(String executableAndArgs,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
-        bool includeParentEnvironment = true}) =>
+        bool includeParentEnvironment = true,
+        bool runInShell = false}) =>
     Script(executableAndArgs,
             args: args,
             name: name,
             workingDirectory: workingDirectory,
             environment: environment,
-            includeParentEnvironment: includeParentEnvironment)
+            includeParentEnvironment: includeParentEnvironment,
+            runInShell: runInShell)
         .done;
 
 /// Runs an executable and returns its stdout, with trailing newlines removed.
@@ -131,13 +133,15 @@ Future<String> output(String executableAndArgs,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
-        bool includeParentEnvironment = true}) =>
+        bool includeParentEnvironment = true,
+        bool runInShell = false}) =>
     Script(executableAndArgs,
             args: args,
             name: name,
             workingDirectory: workingDirectory,
             environment: environment,
-            includeParentEnvironment: includeParentEnvironment)
+            includeParentEnvironment: includeParentEnvironment,
+            runInShell: runInShell)
         .output;
 
 /// Runs an executable and returns a stream of lines it prints to stdout.
@@ -158,13 +162,15 @@ Stream<String> lines(String executableAndArgs,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
-        bool includeParentEnvironment = true}) =>
+        bool includeParentEnvironment = true,
+        bool runInShell = false}) =>
     Script(executableAndArgs,
             args: args,
             name: name,
             workingDirectory: workingDirectory,
             environment: environment,
-            includeParentEnvironment: includeParentEnvironment)
+            includeParentEnvironment: includeParentEnvironment,
+            runInShell: runInShell)
         .lines;
 
 /// Runs an executable and returns whether it returns exit code 0.
@@ -180,13 +186,15 @@ Future<bool> check(String executableAndArgs,
         String? name,
         String? workingDirectory,
         Map<String, String>? environment,
-        bool includeParentEnvironment = true}) =>
+        bool includeParentEnvironment = true,
+        bool runInShell = false}) =>
     Script(executableAndArgs,
             args: args,
             name: name,
             workingDirectory: workingDirectory,
             environment: environment,
-            includeParentEnvironment: includeParentEnvironment)
+            includeParentEnvironment: includeParentEnvironment,
+            runInShell: runInShell)
         .success;
 
 /// Prints [message] to stderr and exits the current script.
