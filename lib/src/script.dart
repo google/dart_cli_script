@@ -136,7 +136,11 @@ class Script {
   /// have a chance to be automatically propagated to the enclosing context.
   /// This way, even if a non-zero exit code causes the entire script to exit,
   /// there will still be time to write stdio.
-  final _doneCompleter = DelayedCompleter<void>.sync();
+  ///
+  /// Note: this should not be made sync, because otherwise process exits will
+  /// outrace [_extraStderrController] messages and cause errors to be
+  /// swallowed.
+  final _doneCompleter = DelayedCompleter<void>();
 
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
