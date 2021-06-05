@@ -43,7 +43,7 @@ void main() {
       }));
       script.stdin.add([1, 2, 3]);
       expect(script.stderr.lines, emitsThrough(contains("oh no!")));
-      expect(script.exitCode, completion(equals(256)));
+      expect(script.exitCode, completion(equals(257)));
     });
   });
 
@@ -72,7 +72,7 @@ void main() {
       }));
       script.stdin.writeln("hello!");
       expect(script.stderr.lines, emitsThrough(contains("oh no!")));
-      expect(script.exitCode, completion(equals(256)));
+      expect(script.exitCode, completion(equals(257)));
     });
   });
 }

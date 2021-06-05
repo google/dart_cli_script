@@ -33,7 +33,7 @@ extension LineStreamExtensions on Stream<String> {
   /// This works like [Script.pipe], treating this stream as a process that
   /// emits only stdout. If [this] emits an error, it's treated the same as an
   /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
-  /// and the virtual stream process exits with error code 256.
+  /// and the virtual stream process exits with error code 257.
   Script operator |(Script script) => bytes | script;
 
   /// Shorthand for `stream.bytes.pipe`.

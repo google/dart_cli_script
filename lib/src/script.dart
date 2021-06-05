@@ -204,7 +204,7 @@ class Script {
   ///
   /// * Any unhandled Dart exceptions within [callback] cause this [Script] to
   ///   print the error message and stack trace to [stderr] and exit with code
-  ///   256.
+  ///   257.
   ///
   /// * Any errors within [callback] that go unhandled after this [script] has
   ///   already exited are silently ignored, as is any additional output.
@@ -520,7 +520,7 @@ class Script {
       _doneCompleter.completeError(ScriptException(name, error.exitCode));
     } else {
       // Otherwise, if this is an unexpected Dart error, print information about
-      // it to stderr and exit with code 256. That code is higher than actual
+      // it to stderr and exit with code 257. That code is higher than actual
       // subprocesses can emit, so it can be used as a sentinel to detect
       // Dart-based failures.
       _extraStderrController.add(utf8.encode("Error in $name:\n"
@@ -528,7 +528,7 @@ class Script {
           "${Chain.forTrace(trace)}\n"));
       _extraStderrController.close();
       _doneCompleter.completeError(
-          ScriptException(name, 256), StackTrace.current);
+          ScriptException(name, 257), StackTrace.current);
     }
 
     _closeOutputStreams();

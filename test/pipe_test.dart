@@ -153,7 +153,7 @@ void main() {
 
             completer.complete();
             await pumpEventQueue();
-            expect(exitCode, equals(256));
+            expect(exitCode, equals(257));
           });
         });
 
@@ -180,7 +180,7 @@ void main() {
 
             completer.complete();
             await pumpEventQueue();
-            expect(exitCode, equals(256));
+            expect(exitCode, equals(257));
           });
 
           test("and the second fails", () async {
@@ -244,7 +244,7 @@ void main() {
 
           completer.complete();
           await pumpEventQueue();
-          expect(exitCode, equals(256));
+          expect(exitCode, equals(257));
         });
 
         test("if the last exits first", () async {
@@ -298,7 +298,7 @@ void main() {
       test("with an error", () {
         var capture = Script.capture((_) {
           var pipeline = Stream<List<int>>.error("oh no") | mainScript("");
-          expect(pipeline.exitCode, completion(equals(256)));
+          expect(pipeline.exitCode, completion(equals(257)));
         });
 
         expect(capture.stderr.lines, emitsThrough(contains("oh no")));
@@ -316,7 +316,7 @@ void main() {
       test("with an error", () {
         var capture = Script.capture((_) {
           var pipeline = Stream<String>.error("oh no") | mainScript("");
-          expect(pipeline.exitCode, completion(equals(256)));
+          expect(pipeline.exitCode, completion(equals(257)));
         });
 
         expect(capture.stderr.lines, emitsThrough(contains("oh no")));

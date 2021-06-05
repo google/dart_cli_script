@@ -57,7 +57,7 @@ void main() {
 
   test("an error while spawning is printed to stderr", () {
     var script = Script("non-existent-executable");
-    expect(script.exitCode, completion(equals(256)));
+    expect(script.exitCode, completion(equals(257)));
     expect(
         script.stderr.lines,
         emitsInOrder([
