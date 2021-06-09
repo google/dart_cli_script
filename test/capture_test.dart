@@ -116,10 +116,10 @@ void main() {
       expect(Script.capture((_) {}).exitCode, completion(equals(0)));
     });
 
-    test("completes with 256 when the capture throws", () {
+    test("completes with 257 when the capture throws", () {
       var script = Script.capture((_) => throw "oh no");
       script.stderr.drain();
-      expect(script.exitCode, completion(equals(256)));
+      expect(script.exitCode, completion(equals(257)));
     });
 
     test("completes with the given exit code when fail() is called", () {
@@ -232,7 +232,7 @@ void main() {
         return Completer<void>().future;
       });
       script.stderr.drain();
-      expect(script.exitCode, completion(equals(256)));
+      expect(script.exitCode, completion(equals(257)));
     });
   });
 

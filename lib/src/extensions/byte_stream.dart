@@ -51,7 +51,7 @@ extension ByteStreamExtensions on Stream<List<int>> {
   /// This works like [Script.pipe], treating this stream as a process that
   /// emits only stdout. If [this] emits an error, it's treated the same as an
   /// unhandled Dart error in a [Script.capture] block: it's printed to stderr
-  /// and the virtual stream process exits with error code 256.
+  /// and the virtual stream process exits with error code 257.
   Script operator |(Object script) => _asScript | script;
 
   /// Creates a [Script] representing this stream.
@@ -59,7 +59,7 @@ extension ByteStreamExtensions on Stream<List<int>> {
   /// This treats [this] as a process that emits only stdout. If [this] emits an
   /// error, it's treated the same as an unhandled Dart error in a
   /// [Script.capture] block: it's printed to stderr and the virtual stream
-  /// process exits with error code 256.
+  /// process exits with error code 257.
   Script get _asScript {
     return Script.fromComponents("stream", () {
       var exitCodeCompleter = Completer<int>.sync();

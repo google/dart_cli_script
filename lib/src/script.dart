@@ -136,7 +136,11 @@ class Script {
   /// have a chance to be automatically propagated to the enclosing context.
   /// This way, even if a non-zero exit code causes the entire script to exit,
   /// there will still be time to write stdio.
-  final _doneCompleter = DelayedCompleter<void>.sync();
+  ///
+  /// Note: this should not be made sync, because otherwise process exits will
+  /// outrace [_extraStderrController] messages and cause errors to be
+  /// swallowed.
+  final _doneCompleter = DelayedCompleter<void>();
 
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
@@ -204,7 +208,7 @@ class Script {
   ///
   /// * Any unhandled Dart exceptions within [callback] cause this [Script] to
   ///   print the error message and stack trace to [stderr] and exit with code
-  ///   256.
+  ///   257.
   ///
   /// * Any errors within [callback] that go unhandled after this [script] has
   ///   already exited are silently ignored, as is any additional output.
@@ -520,7 +524,7 @@ class Script {
       _doneCompleter.completeError(ScriptException(name, error.exitCode));
     } else {
       // Otherwise, if this is an unexpected Dart error, print information about
-      // it to stderr and exit with code 256. That code is higher than actual
+      // it to stderr and exit with code 257. That code is higher than actual
       // subprocesses can emit, so it can be used as a sentinel to detect
       // Dart-based failures.
       _extraStderrController.add(utf8.encode("Error in $name:\n"
@@ -528,7 +532,7 @@ class Script {
           "${Chain.forTrace(trace)}\n"));
       _extraStderrController.close();
       _doneCompleter.completeError(
-          ScriptException(name, 256), StackTrace.current);
+          ScriptException(name, 257), StackTrace.current);
     }
 
     _closeOutputStreams();
