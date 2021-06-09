@@ -21,6 +21,7 @@ import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
+import 'src/config.dart';
 import 'src/exception.dart';
 import 'src/extensions/byte_stream.dart';
 import 'src/extensions/line_stream.dart';
@@ -40,9 +41,6 @@ export 'src/script.dart' hide scriptNameKey;
 export 'src/stdio.dart' hide stdoutKey, stderrKey;
 export 'src/temp.dart';
 
-/// The packages whose stack frames should be folded by [wrapMain].
-const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
-
 /// A wrapper for the body of the top-level `main()` method.
 ///
 /// It's recommended that all scripts wrap their `main()` methods in this
@@ -52,36 +50,37 @@ const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
 ///
 /// By default, if a [Script] fails in [callback], this just exits with that
 /// script's exit code without printing any additional error messages. If
-/// [printScriptException] is `true`, this will print the exception and its
-/// stack trace to stderr before exiting.
+/// [printScriptException] is `true` (or if it's unset and `debug` is `true`),
+/// this will print the exception and its stack trace to stderr before exiting.
 ///
 /// By default, stack frames from the Dart core libraries and from this package
 /// will be folded together to make stack traces more readable. If
 /// [verboseTrace] is `true`, the full stack traces will be printed instead.
+///
+/// If [debug] is `true`, extra information about [Script]s' lifecycels will be
+/// printed directly to stderr. As the name suggests, this is intended for use
+/// only when debugging.
 void wrapMain(FutureOr<void> callback(),
     {bool chainStackTraces = true,
-    bool printScriptException = false,
-    bool verboseTrace = false}) {
-  Chain.capture(callback, onError: (error, chain) {
-    if (!verboseTrace) {
-      chain = chain.foldFrames(
-          (frame) => _packagesToFold.contains(frame.package),
-          terse: true);
-    }
+    bool? printScriptException,
+    bool verboseTrace = false,
+    bool debug = false}) {
+  withConfig(() {
+    Chain.capture(callback, onError: (error, chain) {
+      if (error is! ScriptException) {
+        stderr.writeln(error);
+        stderr.writeln(terseChain(chain));
+        // Use the same exit code that Dart does for unhandled exceptions.
+        exit(254);
+      }
 
-    if (error is! ScriptException) {
-      stderr.writeln(error);
-      stderr.writeln(chain);
-      // Use the same exit code that Dart does for unhandled exceptions.
-      exit(254);
-    }
-
-    if (printScriptException) {
-      stderr.writeln(error);
-      stderr.writeln(chain);
-    }
-    exit(error.exitCode);
-  }, when: chainStackTraces);
+      if (printScriptException ?? debug) {
+        stderr.writeln(error);
+        stderr.writeln(terseChain(chain));
+      }
+      exit(error.exitCode);
+    }, when: chainStackTraces);
+  }, verboseTrace: verboseTrace, debug: debug);
 }
 
 /// Runs an executable for its side effects.

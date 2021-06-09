@@ -23,6 +23,7 @@ import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
 import 'cli_arguments.dart';
+import 'config.dart';
 import 'environment.dart';
 import 'exception.dart';
 import 'extensions/byte_stream.dart';
@@ -163,23 +164,30 @@ class Script {
       bool runInShell = false}) {
     var parsedExecutableAndArgs = CliArguments.parse(executableAndArgs);
 
-    return Script.fromComponents(
-        name ?? p.basename(parsedExecutableAndArgs.executable), () async {
+    name ??= p.basename(parsedExecutableAndArgs.executable);
+    return Script._fromComponents(name, () async {
       if (includeParentEnvironment) {
         environment = environment == null
             ? env
             // Use [withEnv] to ensure that the copied environment correctly
             // overrides the parent [env], including handling case-insensitive
             // keys on Windows.
-            : withEnv(() => env, environment!); // dart-lang/language#1536
+            : withEnv(() => env, environment!);
+      }
+
+      var allArgs = [
+        ...await parsedExecutableAndArgs.arguments(root: workingDirectory),
+        ...?args
+      ];
+
+      if (inDebugMode) {
+        // dart-lang/language#1536
+        debug("[${name!}] ${parsedExecutableAndArgs.executable} "
+            "${allArgs.join(' ')}");
       }
 
       var process = await Process.start(
-          parsedExecutableAndArgs.executable,
-          [
-            ...await parsedExecutableAndArgs.arguments(root: workingDirectory),
-            ...?args
-          ],
+          parsedExecutableAndArgs.executable, allArgs,
           workingDirectory: workingDirectory,
           environment: environment,
           includeParentEnvironment: false,
@@ -187,7 +195,7 @@ class Script {
 
       return ScriptComponents(
           process.stdin, process.stdout, process.stderr, process.exitCode);
-    });
+    }, silenceStartMessage: true);
   }
 
   /// Runs [callback] and captures the output of [Script]s created within it.
@@ -395,7 +403,14 @@ class Script {
   /// This constructor should generally be avoided outside library code. Script
   /// authors are expected to primarily use [Script] and [Script.capture].
   factory Script.fromComponents(
-      String name, FutureOr<ScriptComponents> callback()) {
+          String name, FutureOr<ScriptComponents> callback()) =>
+      Script._fromComponents(name, callback);
+
+  /// Like [Script.fromComponents], but with a private [silenceStartMessage]
+  /// option that's forwarded to [Script._].
+  factory Script._fromComponents(
+      String name, FutureOr<ScriptComponents> callback(),
+      {bool silenceStartMessage = false}) {
     _checkCapture();
 
     var stdoutCompleter = StreamCompleter<List<int>>();
@@ -416,7 +431,8 @@ class Script {
           stdoutCompleter.setSourceStream(components.stdout);
           stderrCompleter.setSourceStream(components.stderr);
           return components.exitCode;
-        }));
+        }),
+        silenceStartMessage: silenceStartMessage);
   }
 
   /// Pipes [stream]'s events to a [StdioGroup] indexed by [key] in the current
@@ -432,9 +448,15 @@ class Script {
   }
 
   /// Creates a [Script] directly from its component fields.
+  ///
+  /// If [silenceStartMessage] is `false` (the default), this prints a message
+  /// in debug mode indicating that the script has started running.
   Script._(this.name, StreamConsumer<List<int>> stdin, Stream<List<int>> stdout,
-      Stream<List<int>> stderr, Future<int> exitCode)
+      Stream<List<int>> stderr, Future<int> exitCode,
+      {bool silenceStartMessage = false})
       : stdin = IOSink(stdin) {
+    if (!silenceStartMessage) debug("[$name] starting");
+
     _stdout = stdout.handleError(_handleError).transform(_outputCloser);
     _stderr = StreamGroup.merge([stderr, _extraStderrController.stream])
         .handleError(_handleError)
@@ -449,8 +471,10 @@ class Script {
       if (_doneCompleter.isCompleted) return;
 
       if (code == 0) {
+        debug("[$name] exited with exit code 0");
         _doneCompleter.complete(null);
       } else {
+        debug("[$name] exited with exit code $code");
         _doneCompleter.completeError(
             ScriptException(name, code), StackTrace.current);
       }
@@ -521,15 +545,26 @@ class Script {
     if (error is ScriptException) {
       // If an internal script fails and the failure isn't handled, this script
       // will also fail with the same exit code.
+      debug("[$name] exited with exit code ${error.exitCode}");
       _doneCompleter.completeError(ScriptException(name, error.exitCode));
     } else {
+      var chain = terseChain(Chain.forTrace(trace));
+      if (inDebugMode) {
+        debug("[$name] exited with Dart exception:\n" +
+            "$error\n$chain"
+                .trimRight()
+                .split("\n")
+                .map((line) => "| $line")
+                .join("\n"));
+      }
+
       // Otherwise, if this is an unexpected Dart error, print information about
       // it to stderr and exit with code 257. That code is higher than actual
       // subprocesses can emit, so it can be used as a sentinel to detect
       // Dart-based failures.
       _extraStderrController.add(utf8.encode("Error in $name:\n"
           "$error\n"
-          "${Chain.forTrace(trace)}\n"));
+          "$chain\n"));
       _extraStderrController.close();
       _doneCompleter.completeError(
           ScriptException(name, 257), StackTrace.current);

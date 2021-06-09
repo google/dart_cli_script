@@ -1,5 +1,7 @@
 ## 0.2.0
 
+* Add a `debug` option to `wrapMain()` to print extra diagnostic information.
+
 * Add a `runInShell` argument for subprocesses.
 
 * Accept `Iterable<String>` instead of `List<String>` for subprocess arguments.
