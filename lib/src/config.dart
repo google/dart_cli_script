@@ -23,7 +23,7 @@ const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
 /// Returns whether debug mode is currently active.
 bool get inDebugMode => Zone.current[#_debug] == true;
 
-/// Prints [message] directly to stdout if debug mode is active.
+/// Prints [message] directly to stderr if debug mode is active.
 void debug(String message) {
   if (!inDebugMode) return;
   stderr.writeln(message);
