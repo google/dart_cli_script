@@ -27,6 +27,7 @@ import 'src/extensions/byte_stream.dart';
 import 'src/extensions/line_stream.dart';
 import 'src/script.dart';
 import 'src/stdio.dart';
+import 'src/util/named_stream_transformer.dart';
 
 export 'src/cli_arguments.dart' show arg;
 export 'src/environment.dart';
@@ -220,11 +221,13 @@ StreamTransformer<String, String> grep(String regexp,
         bool caseSensitive = true,
         bool unicode = false,
         bool dotAll = false}) =>
-    StreamTransformer.fromBind((stream) => stream.grep(regexp,
-        exclude: exclude,
-        caseSensitive: caseSensitive,
-        unicode: unicode,
-        dotAll: dotAll));
+    NamedStreamTransformer.fromBind(
+        "grep",
+        (stream) => stream.grep(regexp,
+            exclude: exclude,
+            caseSensitive: caseSensitive,
+            unicode: unicode,
+            dotAll: dotAll));
 
 /// Returns a transformer that replaces matches of [regexp] with [replacement].
 ///
@@ -242,11 +245,13 @@ StreamTransformer<String, String> replace(String regexp, String replacement,
         bool caseSensitive = true,
         bool unicode = false,
         bool dotAll = false}) =>
-    StreamTransformer.fromBind((stream) => stream.replace(regexp, replacement,
-        all: all,
-        caseSensitive: caseSensitive,
-        unicode: unicode,
-        dotAll: dotAll));
+    NamedStreamTransformer.fromBind(
+        "replace",
+        (stream) => stream.replace(regexp, replacement,
+            all: all,
+            caseSensitive: caseSensitive,
+            unicode: unicode,
+            dotAll: dotAll));
 
 /// Returns a transformer that replaces matches of [regexp] with the result of
 /// calling [replace].
@@ -262,11 +267,13 @@ StreamTransformer<String, String> replaceMapped(
         bool caseSensitive = true,
         bool unicode = false,
         bool dotAll = false}) =>
-    StreamTransformer.fromBind((stream) => stream.replaceMapped(regexp, replace,
-        all: all,
-        caseSensitive: caseSensitive,
-        unicode: unicode,
-        dotAll: dotAll));
+    NamedStreamTransformer.fromBind(
+        "replaceMapped",
+        (stream) => stream.replaceMapped(regexp, replace,
+            all: all,
+            caseSensitive: caseSensitive,
+            unicode: unicode,
+            dotAll: dotAll));
 
 /// A shorthand for opening the file at [path] as a stream.
 ///

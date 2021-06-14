@@ -1,3 +1,8 @@
+## 0.2.1
+
+* Give the stream transformers exposed by this package human-readable
+  `toString()`s.
+
 ## 0.2.0
 
 * Add a `debug` option to `wrapMain()` to print extra diagnostic information.
