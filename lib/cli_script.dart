@@ -29,6 +29,7 @@ import 'src/script.dart';
 import 'src/stdio.dart';
 import 'src/util/named_stream_transformer.dart';
 
+export 'src/buffered_script.dart';
 export 'src/cli_arguments.dart' show arg;
 export 'src/environment.dart';
 export 'src/extensions/byte_list.dart';

@@ -165,7 +165,7 @@ class Script {
     var parsedExecutableAndArgs = CliArguments.parse(executableAndArgs);
 
     name ??= p.basename(parsedExecutableAndArgs.executable);
-    return Script._fromComponents(name, () async {
+    return Script.fromComponentsInternal(name, () async {
       if (includeParentEnvironment) {
         environment = environment == null
             ? env
@@ -397,38 +397,55 @@ class Script {
   ///
   /// This constructor should generally be avoided outside library code. Script
   /// authors are expected to primarily use [Script] and [Script.capture].
-  factory Script.fromComponents(
-          String name, FutureOr<ScriptComponents> callback()) =>
-      Script._fromComponents(name, callback);
+  Script.fromComponents(String name, FutureOr<ScriptComponents> callback())
+      : this.fromComponentsInternal(name, callback, silenceStartMessage: false);
 
-  /// Like [Script.fromComponents], but with a private [silenceStartMessage]
+  /// Like [Script.fromComponents], but with an internal [silenceStartMessage]
   /// option that's forwarded to [Script._].
-  factory Script._fromComponents(
+  ///
+  /// @nodoc
+  @internal
+  Script.fromComponentsInternal(
       String name, FutureOr<ScriptComponents> callback(),
-      {bool silenceStartMessage = false}) {
-    _checkCapture();
+      {required bool silenceStartMessage})
+      : this._fromComponentsInternal(
+            _checkCapture(),
+            name,
+            callback,
+            StreamCompleter<List<int>>(),
+            StreamCompleter<List<int>>(),
+            StreamSinkCompleter<List<int>>(),
+            silenceStartMessage: silenceStartMessage);
 
-    var stdoutCompleter = StreamCompleter<List<int>>();
-    var stdout = stdoutCompleter.stream;
-
-    var stderrCompleter = StreamCompleter<List<int>>();
-    var stderr = stderrCompleter.stream;
-
-    var stdinCompleter = StreamSinkCompleter<List<int>>();
-
-    return Script._(
-        name,
-        stdinCompleter.sink.rejectErrors(),
-        stdout,
-        stderr,
-        Future.sync(callback).then((components) {
-          stdinCompleter.setDestinationSink(components.stdin);
-          stdoutCompleter.setSourceStream(components.stdout);
-          stderrCompleter.setSourceStream(components.stderr);
-          return components.exitCode;
-        }),
-        silenceStartMessage: silenceStartMessage);
-  }
+  /// A helper method for [Script.fromComponentsInternal] that takes a bunch of
+  /// intermediate values as parameters so it can refer to them multiple times
+  /// when invoking [Script._].
+  ///
+  /// It would be much cleaner to just make [Script.fromComponentsInternal] a
+  /// factory constructor, but then it and [Script.fromComponents] couldn't be
+  /// invoked by  subclasses.
+  Script._fromComponentsInternal(
+      // A void parameter is pretty nasty, but it allows us to throw an error if
+      // the surrounding capture is closed before scheduling [callback].
+      void checkCapture,
+      String name,
+      FutureOr<ScriptComponents> callback(),
+      StreamCompleter<List<int>> stdoutCompleter,
+      StreamCompleter<List<int>> stderrCompleter,
+      StreamSinkCompleter<List<int>> stdinCompleter,
+      {required bool silenceStartMessage})
+      : this._(
+            name,
+            stdinCompleter.sink.rejectErrors(),
+            stdoutCompleter.stream,
+            stderrCompleter.stream,
+            Future.sync(callback).then((components) {
+              stdinCompleter.setDestinationSink(components.stdin);
+              stdoutCompleter.setSourceStream(components.stdout);
+              stderrCompleter.setSourceStream(components.stderr);
+              return components.exitCode;
+            }),
+            silenceStartMessage: silenceStartMessage);
 
   /// Pipes [stream]'s events to a [StdioGroup] indexed by [key] in the current
   /// zone if it exists, or else to [defaultConsumer] if it doesn't.
