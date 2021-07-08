@@ -277,13 +277,7 @@ class Script {
           stderrKey: stderrGroup
         },
         zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
-          if (!exitCodeCompleter.isCompleted) {
-            // Add a separate stream rather than using [stdoutGroup.sink] so
-            // that prints will go through even if the user has put the sink
-            // in a weird state by calling [StreamSink.close] or
-            // [StreamSink.addStream].
-            stdoutGroup.add(Stream.value(utf8.encode("$line\n")));
-          }
+          if (!exitCodeCompleter.isCompleted) stdoutGroup.writeln(line);
         }));
 
     return Script._(scriptName, stdinController.sink, stdoutGroup.stream,

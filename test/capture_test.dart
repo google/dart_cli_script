@@ -67,6 +67,15 @@ void main() {
         emitsInOrder(["print", emitsDone]));
   });
 
+  test("forwards prints even if currentStdout is closed", () {
+    expect(
+        Script.capture((_) async {
+          currentStdout.close();
+          print("print");
+        }).stdout.lines,
+        emitsInOrder(["print", emitsDone]));
+  });
+
   test("forwards writes to currentStdout as stdout", () {
     expect(
         Script.capture((_) async {
@@ -97,6 +106,34 @@ void main() {
           "child 2",
           "print 2",
         ]));
+  });
+
+  group("interleaves prints and currentStdout", () {
+    test("synchronously", () {
+      expect(
+          Script.capture((_) {
+            currentStdout.writeln("stdout 1");
+            print("stdout 2");
+            currentStdout.writeln("stdout 3");
+            print("stdout 4");
+            currentStdout.writeln("stdout 5");
+          }).combineOutput().lines,
+          emitsInOrder(
+              ["stdout 1", "stdout 2", "stdout 3", "stdout 4", "stdout 5"]));
+    });
+    test("asynchronously", () {
+      expect(
+          Script.capture((_) async {
+            await pumpEventQueue();
+            currentStdout.writeln("stdout 1");
+            print("stdout 2");
+            currentStdout.writeln("stdout 3");
+            print("stdout 4");
+            currentStdout.writeln("stdout 5");
+          }).combineOutput().lines,
+          emitsInOrder(
+              ["stdout 1", "stdout 2", "stdout 3", "stdout 4", "stdout 5"]));
+    });
   });
 
   test("prints an unhandled error to stderr", () {
