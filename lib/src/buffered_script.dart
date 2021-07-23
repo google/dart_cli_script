@@ -13,12 +13,10 @@
 // limitations under the License.
 
 import 'dart:io';
-import 'dart:io' as io;
 import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:meta/meta.dart';
-import 'package:tuple/tuple.dart';
 
 import 'script.dart';
 import 'util/entangled_controllers.dart';
@@ -119,7 +117,7 @@ class BufferedScript extends Script {
         await Future.wait([_stdoutBuffer.done, _stderrBuffer.done]);
 
         // Give outer stdio listeners a chance to handle the IO.
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
       });
-  AsyncMemoizer<void> _releaseMemo = AsyncMemoizer();
+  final _releaseMemo = AsyncMemoizer<void>();
 }
