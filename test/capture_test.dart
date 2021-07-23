@@ -136,6 +136,53 @@ void main() {
     });
   });
 
+  group("interleaves writes to stdout and stderr", () {
+    test("synchronously", () {
+      expect(
+          Script.capture((_) {
+            currentStdout.writeln("stdout 1");
+            currentStderr.writeln("stderr 1");
+            print("stdout 2");
+            currentStderr.writeln("stderr 2");
+            currentStdout.writeln("stdout 3");
+            currentStdout.writeln("stdout 4");
+            currentStderr.writeln("stderr 3");
+          }).combineOutput().lines,
+          emitsInOrder([
+            "stdout 1",
+            "stderr 1",
+            "stdout 2",
+            "stderr 2",
+            "stdout 3",
+            "stdout 4",
+            "stderr 3"
+          ]));
+    });
+
+    test("asynchronously", () {
+      expect(
+          Script.capture((_) async {
+            await pumpEventQueue();
+            currentStdout.writeln("stdout 1");
+            currentStderr.writeln("stderr 1");
+            print("stdout 2");
+            currentStderr.writeln("stderr 2");
+            currentStdout.writeln("stdout 3");
+            currentStdout.writeln("stdout 4");
+            currentStderr.writeln("stderr 3");
+          }).combineOutput().lines,
+          emitsInOrder([
+            "stdout 1",
+            "stderr 1",
+            "stdout 2",
+            "stderr 2",
+            "stdout 3",
+            "stdout 4",
+            "stderr 3"
+          ]));
+    });
+  });
+
   test("prints an unhandled error to stderr", () {
     var script = Script.capture((_) => throw "oh no");
     expect(script.done, throwsA(anything));

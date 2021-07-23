@@ -240,8 +240,9 @@ class Script {
     var scriptName = name ?? "capture";
     var childScripts = FutureGroup<void>();
     var stdinController = StreamController<List<int>>();
-    var stdoutGroup = StdioGroup();
-    var stderrGroup = StdioGroup();
+    var groups = StdioGroup.entangled();
+    var stdoutGroup = groups.item1;
+    var stderrGroup = groups.item2;
     var exitCodeCompleter = Completer<int>();
 
     runZonedGuarded(

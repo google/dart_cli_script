@@ -17,6 +17,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:tuple/tuple.dart';
+
+import 'util/entangled_controllers.dart';
 
 /// A wrapper over a [StreamGroup] that collects stdout or stderr streams.
 ///
@@ -37,6 +40,12 @@ class StdioGroup {
 
   /// The controller for [sink].
   final StreamController<List<int>> _sinkController;
+
+  static Tuple2<StdioGroup, StdioGroup> entangled() {
+    var controllers = createEntangledControllers<List<int>>();
+    return Tuple2(
+        StdioGroup._(controllers.item1), StdioGroup._(controllers.item2));
+  }
 
   StdioGroup() : this._(StreamController(sync: true));
 

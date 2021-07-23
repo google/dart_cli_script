@@ -3,6 +3,10 @@
 * If the same `capture()` block both calls `print()` and writes to
   `currentStdout`, ensure that the order of prints is preserved.
 
+* If the same `capture()` block writes to both `currentStdout` and
+  `currentStderr`, ensure that the relative order of those writes is preserved
+  when collected with `combineOutput()`.
+
 ## 0.2.1
 
 * Give the stream transformers exposed by this package human-readable
