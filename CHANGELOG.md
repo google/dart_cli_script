@@ -1,3 +1,8 @@
+## 0.2.2
+
+* If the same `capture()` block both calls `print()` and writes to
+  `currentStdout`, ensure that the order of prints is preserved.
+
 ## 0.2.1
 
 * Give the stream transformers exposed by this package human-readable
