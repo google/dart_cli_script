@@ -18,8 +18,6 @@ import 'dart:collection';
 import 'package:async/async.dart';
 import 'package:tuple/tuple.dart';
 
-import 'dart:io';
-
 /// Returns two stream controllers that are *entangled*, meaning that the
 /// relative order in which they emit events is preserved even if their streams
 /// are listened to after events have been buffered.

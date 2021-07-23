@@ -43,7 +43,7 @@ void main() {
         controller1.stream.listen(expectAsync1((_) {}, count: 0),
             onError: expectAsync2((_, __) {}, count: 0),
             onDone: expectAsync0(() {}, count: 0));
-        await Future.value();
+        await Future<void>.value();
         controller2.stream.listen(expectAsync1((_) {}, count: 0),
             onError: expectAsync2((_, __) {}, count: 0),
             onDone: expectAsync0(() {}, count: 0));
@@ -87,7 +87,7 @@ void main() {
 
       test("when listened in a different microtask", () async {
         events1 = _collectEvents(controller1);
-        await Future.value();
+        await Future<void>.value();
         events2 = _collectEvents(controller2);
       });
 
@@ -137,7 +137,7 @@ void main() {
 
         for (var i = 0; i < 9; i++) {
           expect(events.events, hasLength(i));
-          await Future.value();
+          await Future<void>.value();
         }
       });
 
@@ -147,12 +147,12 @@ void main() {
 
         for (var i = 0; i < 4; i++) {
           controller1.add("extra $i");
-          await Future.value();
+          await Future<void>.value();
         }
 
         for (var i = 4; i < 13; i++) {
           expect(events.events, hasLength(i));
-          await Future.value();
+          await Future<void>.value();
         }
 
         expect(events.events, hasLength(12));
@@ -187,7 +187,7 @@ void main() {
     group("when one controller is listened in a separate microtask", () {
       test("both controllers emit the right events", () async {
         var events1 = _collectEvents(controller1);
-        await Future.value();
+        await Future<void>.value();
         var events2 = _collectEvents(controller2);
 
         await pumpEventQueue();
@@ -207,9 +207,9 @@ void main() {
       test(
           "new events for the second controller are buffered until it's listened",
           () async {
-        var events1 = _collectEvents(controller1);
+        _collectEvents(controller1);
         controller2.add("2:5");
-        await Future.value();
+        await Future<void>.value();
         var events2 = _collectEvents(controller2);
 
         await pumpEventQueue();
@@ -239,7 +239,7 @@ void main() {
       test(
           "new events for the second controller are buffered until it's listened",
           () async {
-        var events1 = _collectEvents(controller1);
+        _collectEvents(controller1);
         controller2.add("2:5");
         await pumpEventQueue();
         var events2 = _collectEvents(controller2);
@@ -285,7 +285,7 @@ _CollectedEvents _collectEventsFromBoth(StreamController<Object> controller1,
 void _collectEventsInto(
     StreamController<Object> controller, _CollectedEvents events) {
   controller.stream.listen((value) => events.events.add(Result.value(value)),
-      onError: (error, stackTrace) =>
+      onError: (Object error, StackTrace stackTrace) =>
           events.events.add(Result.error(error, stackTrace)),
       onDone: () => events.done = true);
 }
