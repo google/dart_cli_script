@@ -23,9 +23,3 @@ dev_dependencies:
     git: {url: git://github.com/sass/dart-sass, path: analysis}
   test: ^1.16.8
   test_descriptor: ^2.0.0
-
-dependency_overrides:
-  async:
-    git:
-      url: git://github.com/dart-lang/async
-      ref: sink-base
