@@ -1,5 +1,9 @@
 ## 0.2.2
 
+* Add a `BufferedScript` class that buffers output from a Script until it's
+  explicitly released, making it easier to run multiple script in parallel
+  without having their outputs collide with one another.
+
 * If the same `capture()` block both calls `print()` and writes to
   `currentStdout`, ensure that the order of prints is preserved.
 
