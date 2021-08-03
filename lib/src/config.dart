@@ -18,7 +18,14 @@ import 'dart:io';
 import 'package:stack_trace/stack_trace.dart';
 
 /// The packages whose stack frames should be folded by [terseChain].
-const _packagesToFold = {'cli_script', 'async', 'path', 'string_scanner'};
+const _packagesToFold = {
+  'cli_script',
+  'async',
+  'collection',
+  'glob',
+  'path',
+  'string_scanner'
+};
 
 /// Returns whether debug mode is currently active.
 bool get inDebugMode => Zone.current[#_debug] == true;
