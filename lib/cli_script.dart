@@ -212,23 +212,36 @@ Never fail(String message, {int exitCode = 1}) {
 /// Returns a transformer that emits only the elements of the source stream that
 /// match [regexp].
 ///
+/// Note that unlike the command-line `grep` program, this won't emit a
+/// [ScriptException] even if it matches nothing.
+///
 /// If [exclude] is `true`, instead returns the elements of the source stream
 /// that *don't* match [regexp].
+///
+/// If [onlyMatching] is `true`, this only prints the non-empty matched parts of
+/// each line. Prints each match on a separate line. This flag can't be `true`
+/// at the same time as [exclude].
 ///
 /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
 /// [new RegExp].
 StreamTransformer<String, String> grep(String regexp,
-        {bool exclude = false,
-        bool caseSensitive = true,
-        bool unicode = false,
-        bool dotAll = false}) =>
-    NamedStreamTransformer.fromBind(
-        "grep",
-        (stream) => stream.grep(regexp,
-            exclude: exclude,
-            caseSensitive: caseSensitive,
-            unicode: unicode,
-            dotAll: dotAll));
+    {bool exclude = false,
+    bool onlyMatching = false,
+    bool caseSensitive = true,
+    bool unicode = false,
+    bool dotAll = false}) {
+  if (exclude && onlyMatching) {
+    throw ArgumentError("The exclude and onlyMatching flags can't both be set");
+  }
+
+  return NamedStreamTransformer.fromBind(
+      "grep",
+      (stream) => stream.grep(regexp,
+          exclude: exclude,
+          caseSensitive: caseSensitive,
+          unicode: unicode,
+          dotAll: dotAll));
+}
 
 /// Returns a transformer that replaces matches of [regexp] with [replacement].
 ///

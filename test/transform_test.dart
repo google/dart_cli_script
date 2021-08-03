@@ -31,6 +31,36 @@ void main() {
           Stream.fromIterable(["foo", "bar", "baz"]).grep(r"^b", exclude: true),
           emitsInOrder(["foo", emitsDone]));
     });
+
+    group("with onlyMatching: true", () {
+      test("throws an error if exclude is also true", () {
+        expect(
+            () => Stream.fromIterable(["foo", "bar", "baz"])
+                .grep(r"^b", onlyMatching: true, exclude: true),
+            throwsArgumentError);
+      });
+
+      test("prints the matching parts of lines that match", () {
+        expect(
+            Stream.fromIterable(["foo", "bar", "baz"])
+                .grep(r"a.", onlyMatching: true),
+            emitsInOrder(["ar", "az"]));
+      });
+
+      test("prints multiple matching parts per line", () {
+        expect(
+            Stream.fromIterable(["foo bar", "baz bang bop"])
+                .grep(r"[a-z]{3}", onlyMatching: true),
+            emitsInOrder(["foo", "bar", "baz", "ban", "bop"]));
+      });
+
+      test("doesn't print empty matches", () {
+        expect(
+            Stream.fromIterable(["foo", "bar", "baz"])
+                .grep(r"q?", onlyMatching: true),
+            emitsDone);
+      });
+    });
   });
 
   group("replaceMapped", () {

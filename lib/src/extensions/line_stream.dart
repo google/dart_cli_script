@@ -45,16 +45,32 @@ extension LineStreamExtensions on Stream<String> {
   /// If [exclude] is `true`, instead returns the elements of [this] that
   /// *don't* match [regexp].
   ///
+  /// If [onlyMatching] is `true`, this only prints the non-empty matched parts
+  /// of each line. Prints each match on a separate line. This flag can't be
+  /// `true` at the same time as [exclude].
+  ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
   /// [new RegExp].
   Stream<String> grep(String regexp,
       {bool exclude = false,
+      bool onlyMatching = false,
       bool caseSensitive = true,
       bool unicode = false,
       bool dotAll = false}) {
+    if (exclude && onlyMatching) {
+      throw ArgumentError(
+          "The exclude and onlyMatching flags can't both be set");
+    }
+
     var pattern = RegExp(regexp,
         caseSensitive: caseSensitive, unicode: unicode, dotAll: dotAll);
-    return where((line) => pattern.hasMatch(line) != exclude);
+
+    return onlyMatching
+        ? expand((line) => pattern
+            .allMatches(line)
+            .map((match) => match.group(0)!)
+            .where((match) => match.isNotEmpty))
+        : where((line) => pattern.hasMatch(line) != exclude);
   }
 
   /// Replaces matches of [regexp] with [replacement].

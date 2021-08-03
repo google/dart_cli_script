@@ -1,4 +1,7 @@
-## 0.2.2+1
+## 0.2.3
+
+* Add an `onlyMatching` flag to `grep()` which prints the sections of input
+  lines that match the given regular expression.
 
 * Fold stack frames for a few more packages used internally.
 
