@@ -20,6 +20,7 @@ import 'package:charcode/charcode.dart';
 import 'package:string_scanner/string_scanner.dart';
 
 import '../script.dart';
+import '../stdio.dart';
 import 'byte_stream.dart';
 
 /// Extensions on [Stream<String>] that treat it as a stream of discrete lines
@@ -142,6 +143,15 @@ extension LineStreamExtensions on Stream<String> {
         ? line.replaceAllMapped(pattern, replace)
         : line.replaceFirstMapped(pattern, replace));
   }
+
+  /// Returns a stream that emits the same events as this one, but also prints
+  /// each string to [currentStderr].
+  ///
+  /// This is primarily intended for debugging.
+  Stream<String> get teeToStderr => map((line) {
+        currentStderr.writeln(line);
+        return line;
+      });
 
   /// Passes the strings emitted by this stream as arguments to [callback].
   ///

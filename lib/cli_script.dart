@@ -289,6 +289,13 @@ StreamTransformer<String, String> replaceMapped(
             unicode: unicode,
             dotAll: dotAll));
 
+/// A transformer that emits each string exactly as it was received, but also
+/// prints each string to [currentStderr].
+///
+/// This is primarily intended for debugging.
+final teeToStderr = NamedStreamTransformer<String, String>.fromBind(
+    "teeToStderr", (stream) => stream.teeToStderr);
+
 /// A shorthand for opening the file at [path] as a stream.
 ///
 /// With [ByteStreamExtensions.operator |], this can be used to pass the

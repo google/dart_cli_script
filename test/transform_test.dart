@@ -125,6 +125,21 @@ void main() {
     });
   });
 
+  group("teeToStderr", () {
+    test("passes inputs through as-is", () {
+      silenceStderr(() {
+        expect(Stream.fromIterable(["foo", "bar", "baz"]).teeToStderr,
+            emitsInOrder(["foo", "bar", "baz"]));
+      });
+    });
+
+    test("emits inputs to sdterr", () {
+      var script = Script.capture((_) =>
+          Stream.fromIterable(["foo", "bar", "baz"]).teeToStderr.drain());
+      expect(script.stderr.lines, emitsInOrder(["foo", "bar", "baz"]));
+    });
+  });
+
   group("xargs", () {
     group("from a stream", () {
       test("passes stream entries as arguments", () {

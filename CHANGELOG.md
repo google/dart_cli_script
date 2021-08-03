@@ -3,6 +3,10 @@
 * Add an `onlyMatching` flag to `grep()` which prints the sections of input
   lines that match the given regular expression.
 
+* Add a `teeToStderr` transformer and extension method on
+  `Stream<List<String>>`. This passes a stream to stderr without modifying it,
+  which is useful for debugging.
+
 * Fold stack frames for a few more packages used internally.
 
 ## 0.2.2
