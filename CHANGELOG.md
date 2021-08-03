@@ -1,3 +1,7 @@
+## 0.2.2+1
+
+* Fold stack frames for a few more packages used internally.
+
 ## 0.2.2
 
 * Add a `BufferedScript` class that buffers output from a Script until it's
