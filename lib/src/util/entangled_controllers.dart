@@ -15,8 +15,10 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:async/async.dart';
+import 'package:async/async.dart' hide StreamSinkBase;
 import 'package:tuple/tuple.dart';
+
+import 'sink_base.dart';
 
 /// Returns two stream controllers that are *entangled*, meaning that the
 /// relative order in which they emit events is preserved even if their streams

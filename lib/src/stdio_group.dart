@@ -16,10 +16,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:async/async.dart';
+import 'package:async/async.dart' hide IOSinkBase;
 import 'package:tuple/tuple.dart';
 
 import 'util/entangled_controllers.dart';
+import 'util/sink_base.dart';
 
 /// A wrapper over a [StreamGroup] that collects stdout or stderr streams.
 ///
