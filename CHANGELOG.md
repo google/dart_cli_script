@@ -10,7 +10,7 @@
 * Add a `Script.mapLines` constructor that returns a script that maps stdin
   lines according to a `String Function(String)`.
 
-* Add support for passing a `String Function(String)` to `Script.pipieline` and
+* Add support for passing a `String Function(String)` to `Script.pipeline` and
   `Script.operator |` to map stdin lines.
 
 * Fold stack frames for a few more packages used internally.
