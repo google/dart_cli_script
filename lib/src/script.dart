@@ -315,12 +315,20 @@ class Script {
           StreamTransformer<String, String> transformer,
           {String? name}) =>
       Script.fromByteTransformer(
-          StreamTransformer.fromBind((stream) => stream
-              .transform(utf8.decoder)
-              .transform(const LineSplitter())
+          StreamTransformer.fromBind((stream) => stream.lines
               .transform(transformer)
               .map((line) => utf8.encode("$line\n"))),
           name: name ?? transformer.toString());
+
+  /// Creates a [Script] from a function that maps strings to strings.
+  ///
+  /// This script passes each line of stdin to [mapper] and emits the result via
+  /// stdout.
+  factory Script.mapLines(String Function(String line) mapper,
+          {String? name}) =>
+      Script.fromLineTransformer(
+          StreamTransformer.fromBind((stream) => stream.map(mapper)),
+          name: name ?? mapper.toString());
 
   /// Pipes each script's [stdout] into the next script's [stdin].
   ///
@@ -376,6 +384,8 @@ class Script {
       return Script.fromByteTransformer(scriptlike);
     } else if (scriptlike is StreamTransformer<String, String>) {
       return Script.fromLineTransformer(scriptlike);
+    } else if (scriptlike is String Function(String)) {
+      return Script.mapLines(scriptlike);
     } else {
       throw ArgumentError(
           "$scriptlike is not a Script and can't be converted to one.");
