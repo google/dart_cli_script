@@ -1,3 +1,7 @@
+## 0.2.3+1
+
+* Properly respect `onlyMatching` in the top-level `grep()` method.
+
 ## 0.2.3
 
 * Add an `onlyMatching` flag to `grep()` which prints the sections of input

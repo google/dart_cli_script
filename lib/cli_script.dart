@@ -238,6 +238,7 @@ StreamTransformer<String, String> grep(String regexp,
       "grep",
       (stream) => stream.grep(regexp,
           exclude: exclude,
+          onlyMatching: onlyMatching,
           caseSensitive: caseSensitive,
           unicode: unicode,
           dotAll: dotAll));
