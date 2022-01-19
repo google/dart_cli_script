@@ -78,9 +78,9 @@ class _StdioGroupSink extends IOSinkBase implements IOSink {
   /// The underlying sink.
   final StreamSink<List<int>> _sink;
 
-  Encoding encoding = utf8;
-
-  _StdioGroupSink(this._sink);
+  _StdioGroupSink(this._sink) {
+    encoding = utf8;
+  }
 
   void onAdd(List<int> data) => _sink.add(data);
 

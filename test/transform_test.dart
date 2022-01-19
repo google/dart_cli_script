@@ -135,7 +135,7 @@ void main() {
 
     test("emits inputs to sdterr", () {
       var script = Script.capture((_) =>
-          Stream.fromIterable(["foo", "bar", "baz"]).teeToStderr.drain());
+          Stream.fromIterable(["foo", "bar", "baz"]).teeToStderr.drain<void>());
       expect(script.stderr.lines, emitsInOrder(["foo", "bar", "baz"]));
     });
   });
@@ -232,7 +232,7 @@ void main() {
       test("the script fails once a callback throws", () async {
         var script = Stream.fromIterable(["1", "2", "3", "4", "5"])
             .xargs(expectAsync1((args) => throw "oh no", count: 1), maxArgs: 1);
-        script.stderr.drain();
+        script.stderr.drain<void>();
         expect(script.exitCode, completion(equals(257)));
 
         // Give xargs time to run further callbacks if it's going to.
