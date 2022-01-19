@@ -44,6 +44,12 @@ final scriptNameKey = #_captureName;
 /// it can also be a block of Dart code (created using [Script.capture]) or a
 /// user-defined custom script (created using [Script.fromComponents]).
 ///
+/// **Heads up:** If you want to handle a [Script]'s [stdout], [stderr], or
+/// [exitCode] make sure to set up your handlers *synchronously* after you
+/// create the [Script]! If you try to listen too late, you'll get "Stream has
+/// already been listened to" errors because the streams have already been piped
+/// into the parent process's output.
+///
 /// All script types provide the following guarantees:
 ///
 /// * All errors will be emitted through [exitCode], [success], and/or [done]

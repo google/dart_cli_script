@@ -1,3 +1,7 @@
+## 0.2.3+2
+
+* Documentation improvements only.
+
 ## 0.2.3+1
 
 * Properly respect `onlyMatching` in the top-level `grep()` method.
