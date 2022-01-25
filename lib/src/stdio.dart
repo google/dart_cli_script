@@ -56,7 +56,7 @@ IOSink get currentStderr {
 /// handling.
 T silenceStdout<T>(T callback()) {
   var group = StdioGroup();
-  group.stream.drain();
+  group.stream.drain<void>();
   return runZoned(callback,
       zoneValues: {stdoutKey: group},
       zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}));
@@ -68,7 +68,7 @@ T silenceStdout<T>(T callback()) {
 /// handling.
 T silenceStderr<T>(T callback()) {
   var group = StdioGroup();
-  group.stream.drain();
+  group.stream.drain<void>();
   return runZoned(callback, zoneValues: {stderrKey: group});
 }
 
@@ -79,7 +79,7 @@ T silenceStderr<T>(T callback()) {
 /// handling.
 T silenceOutput<T>(T callback()) {
   var group = StdioGroup();
-  group.stream.drain();
+  group.stream.drain<void>();
   return runZoned(callback,
       zoneValues: {stdoutKey: group, stderrKey: group},
       zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}));

@@ -47,7 +47,7 @@ void main() {
 
     test("is non-zero for a script that can't be found", () {
       var script = Script("non-existent-executable");
-      script.stderr.drain();
+      script.stderr.drain<void>();
       expect(script.success, completion(isFalse));
     });
   });
@@ -199,7 +199,7 @@ void stdoutOrStderr(String name, Stream<List<int>> stream(Script script)) {
         var script = Script("non-existent-executable");
         expect(script.done, throwsA(anything));
         expect(stream(script), emitsThrough(emitsDone));
-      }).stderr.drain();
+      }).stderr.drain<void>();
     });
 
     test("emits non-text values", () {

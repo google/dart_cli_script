@@ -202,14 +202,14 @@ void main() {
 
     test("completes with 257 when the capture throws", () {
       var script = Script.capture((_) => throw "oh no");
-      script.stderr.drain();
+      script.stderr.drain<void>();
       expect(script.exitCode, completion(equals(257)));
     });
 
     test("completes with the given exit code when fail() is called", () {
       var script =
           Script.capture((_) => cli_script.fail("oh no", exitCode: 42));
-      script.stderr.drain();
+      script.stderr.drain<void>();
       expect(script.exitCode, completion(equals(42)));
     });
 
@@ -315,7 +315,7 @@ void main() {
         Future<void>.error("oh no");
         return Completer<void>().future;
       });
-      script.stderr.drain();
+      script.stderr.drain<void>();
       expect(script.exitCode, completion(equals(257)));
     });
   });

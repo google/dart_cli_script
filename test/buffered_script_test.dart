@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dart-lang/sdk#48173
+// ignore_for_file: void_checks
+
 import 'package:async/async.dart';
 import 'package:test/test.dart';
 

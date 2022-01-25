@@ -111,7 +111,7 @@ class at the heart of `cli_script`. This class represents a subprocess (or
 [something process-like](#composability)) and provides access to its [`stdin`],
 [`stdout`], [`stderr`], and [`exitCode`].
 
-[`Script`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script.html
+[`Script`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script-class.html
 [`stdin`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/stdin.html
 [`stdout`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/stdout.html
 [`stderr`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/stderr.html
@@ -142,6 +142,12 @@ child process fails unless that process is in an `if` statement or similar. In
 code unless the [`exitCode`] or [`success`] fields are accessed.
 
 [`success`]: https://pub.dev/documentation/cli_script/latest/cli_script/Script/success.html
+
+**Heads up:** If you do want to handle a `Script`'s `stdout`, `stderr`, or
+`exitCode` make sure to set up your handlers *synchronously* after you create
+the `Script`! If you try to listen too late, you'll get "Stream has already been
+listened to" errors because the streams have already been piped into the parent
+process's output.
 
 ### Pipelining
 
