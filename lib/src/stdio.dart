@@ -15,6 +15,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'buffered_script.dart';
+import 'script.dart';
 import 'stdio_group.dart';
 
 /// An opaque key for the Zone value that contains the [StdioGroup] for the
@@ -83,4 +85,41 @@ T silenceOutput<T>(T callback()) {
   return runZoned(callback,
       zoneValues: {stdoutKey: group, stderrKey: group},
       zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}));
+}
+
+/// Runs [callback] in a [Script.capture] block and silences all stdout and
+/// stderr emitted by [Script]s or calls to [print] within it until the
+/// [callback] produces an error.
+///
+/// If and when [callback] produces an error, all the silenced output will be
+/// forwarded to the returned script's [Script.stdout] and [Script.stderr]
+/// streams.
+///
+/// If [when] is false, this doesn't silence any output.
+Script silenceUntilFailure(
+    FutureOr<void> Function(Stream<List<int>> stdin) callback,
+    {String? name,
+    bool? when}) {
+  // Wrap this in an additional [Script.capture] so that we can both handle the
+  // failure *and* still have it be top-leveled if it's not handled by the
+  // caller.
+  return Script.capture((stdin) async {
+    if (when == false) {
+      await callback(stdin);
+      return;
+    }
+
+    var script = BufferedScript.capture((_) => callback(stdin),
+        name: name == null ? null : '$name.inner');
+
+    try {
+      await script.done;
+    } catch (_) {
+      script.release();
+
+      // Give the new stdio a chance to propagate.
+      await Future<void>.delayed(Duration.zero);
+      rethrow;
+    }
+  }, name: name);
 }

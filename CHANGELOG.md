@@ -1,3 +1,8 @@
+## 0.2.4
+
+* Add a `silenceUntilFailure()` function that suppresses output for a block of
+  code until it emits an error.
+
 ## 0.2.3+2
 
 * Documentation improvements only.
