@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dart-lang/sdk#48173
+// ignore_for_file: void_checks
+
 import 'dart:async';
 
 import 'package:test/test.dart';
@@ -197,6 +200,118 @@ void main() {
                   scheduleMicrotask(() => currentStderr.writeln('howdy!')));
             }).combineOutput(),
             emitsDone);
+      });
+    });
+  });
+
+  group("silenceUntilFailure()", () {
+    group("suppresses output from", () {
+      group("scripts", () {
+        test("started synchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) => mainScript("""
+                  print('howdy!');
+                  stderr.writeln('howdy!');
+                """));
+              }).combineOutput(),
+              emitsDone);
+        });
+
+        test("started asynchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure(
+                    (_) => scheduleMicrotask(() => mainScript("""
+                      print('howdy!');
+                      stderr.writeln('howdy!');
+                    """)));
+              }).combineOutput(),
+              emitsDone);
+        });
+      });
+
+      group("print", () {
+        test("synchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) => print("howdy!"));
+              }).combineOutput(),
+              emitsDone);
+        });
+
+        test("asynchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure(
+                    (_) => scheduleMicrotask(() => print('howdy!')));
+              }).combineOutput(),
+              emitsDone);
+        });
+      });
+
+      group("currentStdout", () {
+        test("synchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) => currentStdout.writeln("howdy!"));
+              }).combineOutput(),
+              emitsDone);
+        });
+
+        test("asynchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) =>
+                    scheduleMicrotask(() => currentStdout.writeln('howdy!')));
+              }).combineOutput(),
+              emitsDone);
+        });
+      });
+
+      group("currentStderr", () {
+        test("synchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) => currentStderr.writeln("howdy!"));
+              }).combineOutput(),
+              emitsDone);
+        });
+
+        test("asynchronously", () {
+          expect(
+              Script.capture((_) {
+                silenceUntilFailure((_) =>
+                    scheduleMicrotask(() => currentStderr.writeln('howdy!')));
+              }).combineOutput(),
+              emitsDone);
+        });
+      });
+    });
+
+    group("releases stdio when the callback fails", () {
+      test("synchronously", () {
+        var script = Script.capture((_) {
+          silenceUntilFailure((_) {
+            print("howdy!");
+            throw 'oh no';
+          });
+        });
+        expect(script.done, throwsScriptException(257));
+        expect(script.stdout.text, completion(equals('howdy!')));
+        expect(script.stderr.text, completion(contains('oh no')));
+      });
+
+      test("asynchronously", () {
+        var script = Script.capture((_) {
+          silenceUntilFailure((_) async {
+            print("howdy!");
+            await mainScript("throw 'oh no';").done;
+          });
+        });
+        expect(script.done, throwsScriptException(255));
+        expect(script.stdout.text, completion(equals('howdy!')));
+        expect(script.stderr.text, completion(contains('oh no')));
       });
     });
   });
