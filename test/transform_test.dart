@@ -14,12 +14,118 @@
 
 import 'dart:async';
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'package:cli_script/cli_script.dart';
 
 // Tests for utility stream transforms.
 void main() {
+  group("withSpans", () {
+    test("emits each line", () async {
+      var tuples =
+          await Stream.fromIterable(["foo", "bar", "baz"]).withSpans().toList();
+      expect(tuples[0].item1, equals("foo"));
+      expect(tuples[1].item1, equals("bar"));
+      expect(tuples[2].item1, equals("baz"));
+    });
+
+    test("emits spans that cover each line", () async {
+      var tuples =
+          await Stream.fromIterable(["foo", "bar", "baz"]).withSpans().toList();
+
+      expect(tuples[0].item2.start.offset, equals(0));
+      expect(tuples[0].item2.start.line, equals(0));
+      expect(tuples[0].item2.start.column, equals(0));
+      expect(tuples[0].item2.end.offset, equals(3));
+      expect(tuples[0].item2.end.line, equals(0));
+      expect(tuples[0].item2.end.column, equals(3));
+      expect(tuples[0].item2.text, equals("foo"));
+      expect(tuples[0].item2.context, equals("foo"));
+
+      expect(tuples[1].item2.start.offset, equals(4));
+      expect(tuples[1].item2.start.line, equals(1));
+      expect(tuples[1].item2.start.column, equals(0));
+      expect(tuples[1].item2.end.offset, equals(7));
+      expect(tuples[1].item2.end.line, equals(1));
+      expect(tuples[1].item2.end.column, equals(3));
+      expect(tuples[1].item2.text, equals("bar"));
+      expect(tuples[1].item2.context, equals("bar"));
+
+      expect(tuples[2].item2.start.offset, equals(8));
+      expect(tuples[2].item2.start.line, equals(2));
+      expect(tuples[2].item2.start.column, equals(0));
+      expect(tuples[2].item2.end.offset, equals(11));
+      expect(tuples[2].item2.end.line, equals(2));
+      expect(tuples[2].item2.end.column, equals(3));
+      expect(tuples[2].item2.text, equals("baz"));
+      expect(tuples[2].item2.context, equals("baz"));
+    });
+
+    test("URLs default to null", () async {
+      var tuples =
+          await Stream.fromIterable(["foo", "bar", "baz"]).withSpans().toList();
+
+      expect(tuples[0].item2.sourceUrl, isNull);
+      expect(tuples[0].item2.start.sourceUrl, isNull);
+      expect(tuples[0].item2.end.sourceUrl, isNull);
+
+      expect(tuples[1].item2.sourceUrl, isNull);
+      expect(tuples[1].item2.start.sourceUrl, isNull);
+      expect(tuples[1].item2.end.sourceUrl, isNull);
+
+      expect(tuples[2].item2.sourceUrl, isNull);
+      expect(tuples[2].item2.start.sourceUrl, isNull);
+      expect(tuples[2].item2.end.sourceUrl, isNull);
+    });
+
+    test("URLs can be set with sourceUrl", () async {
+      var url = Uri.parse('file:///some/file.txt');
+      var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+          .withSpans(sourceUrl: url)
+          .toList();
+
+      expect(tuples[0].item2.sourceUrl, equals(url));
+      expect(tuples[0].item2.start.sourceUrl, equals(url));
+      expect(tuples[0].item2.end.sourceUrl, equals(url));
+
+      expect(tuples[1].item2.sourceUrl, equals(url));
+      expect(tuples[1].item2.start.sourceUrl, equals(url));
+      expect(tuples[1].item2.end.sourceUrl, equals(url));
+
+      expect(tuples[2].item2.sourceUrl, equals(url));
+      expect(tuples[2].item2.start.sourceUrl, equals(url));
+      expect(tuples[2].item2.end.sourceUrl, equals(url));
+    });
+
+    test("URLs can be set with sourcePath", () async {
+      var path = 'some/file';
+      var url = p.toUri(path);
+      var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+          .withSpans(sourcePath: path)
+          .toList();
+
+      expect(tuples[0].item2.sourceUrl, equals(url));
+      expect(tuples[0].item2.start.sourceUrl, equals(url));
+      expect(tuples[0].item2.end.sourceUrl, equals(url));
+
+      expect(tuples[1].item2.sourceUrl, equals(url));
+      expect(tuples[1].item2.start.sourceUrl, equals(url));
+      expect(tuples[1].item2.end.sourceUrl, equals(url));
+
+      expect(tuples[2].item2.sourceUrl, equals(url));
+      expect(tuples[2].item2.start.sourceUrl, equals(url));
+      expect(tuples[2].item2.end.sourceUrl, equals(url));
+    });
+
+    test("sourcePath and sourceUrl can't both be set", () async {
+      expect(
+          () => Stream.fromIterable(["foo", "bar", "baz"])
+              .withSpans(sourceUrl: Uri.parse("foo"), sourcePath: "foo"),
+          throwsArgumentError);
+    });
+  });
+
   group("grep", () {
     test("returns matching lines", () {
       expect(Stream.fromIterable(["foo", "bar", "baz"]).grep(r"^b"),
@@ -59,6 +165,79 @@ void main() {
             Stream.fromIterable(["foo", "bar", "baz"])
                 .grep(r"q?", onlyMatching: true),
             emitsDone);
+      });
+    });
+
+    group("with spans", () {
+      test("returns matching spans", () async {
+        var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+            .withSpans()
+            .grep(r"^b")
+            .toList();
+        expect(tuples, hasLength(2));
+        expect(tuples[0].item2.text, equals("bar"));
+        expect(tuples[1].item2.text, equals("baz"));
+      });
+
+      test("returns non-matching spans with exclude: true", () async {
+        var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+            .withSpans()
+            .grep(r"^b", exclude: true)
+            .toList();
+        expect(tuples, hasLength(1));
+        expect(tuples[0].item2.text, equals("foo"));
+      });
+
+      group("with onlyMatching: true", () {
+        test("emits the matching parts of spans that match", () async {
+          var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+              .withSpans()
+              .grep(r"a.", onlyMatching: true)
+              .toList();
+
+          expect(tuples, hasLength(2));
+          expect(tuples[0].item2.text, equals("ar"));
+          expect(tuples[1].item2.text, equals("az"));
+        });
+
+        test("preserves the context of spans that match", () async {
+          var tuples = await Stream.fromIterable(["foo", "bar", "baz"])
+              .withSpans()
+              .grep(r"a.", onlyMatching: true)
+              .toList();
+
+          expect(tuples, hasLength(2));
+          expect(tuples[0].item2.context, equals("bar"));
+          expect(tuples[1].item2.context, equals("baz"));
+        });
+
+        test("emits the matching parts of multiple matches per line", () async {
+          var tuples = await Stream.fromIterable(["foo bar", "baz bang bop"])
+              .withSpans()
+                .grep(r"[a-z]{3}", onlyMatching: true)
+              .toList();
+
+          expect(tuples, hasLength(5));
+          expect(tuples[0].item2.text, equals("foo"));
+          expect(tuples[1].item2.text, equals("bar"));
+          expect(tuples[2].item2.text, equals("baz"));
+          expect(tuples[3].item2.text, equals("ban"));
+          expect(tuples[4].item2.text, equals("bop"));
+        });
+
+        test("preserves the context of multiple matches per line", () async {
+          var tuples = await Stream.fromIterable(["foo bar", "baz bang bop"])
+              .withSpans()
+                .grep(r"[a-z]{3}", onlyMatching: true)
+              .toList();
+
+          expect(tuples, hasLength(5));
+          expect(tuples[0].item2.context, equals("foo bar"));
+          expect(tuples[1].item2.context, equals("foo bar"));
+          expect(tuples[2].item2.context, equals("baz bang bop"));
+          expect(tuples[3].item2.context, equals("baz bang bop"));
+          expect(tuples[4].item2.context, equals("baz bang bop"));
+        });
       });
     });
   });

@@ -16,11 +16,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:async/async.dart';
-import 'package:charcode/charcode.dart';
-import 'package:string_scanner/string_scanner.dart';
+import 'package:path/path.dart' as p;
+import 'package:source_span/source_span.dart';
+import 'package:tuple/tuple.dart';
 
 import '../script.dart';
 import '../stdio.dart';
+import '../util.dart';
 import 'byte_stream.dart';
 
 /// Extensions on [Stream<String>] that treat it as a stream of discrete lines
@@ -40,6 +42,41 @@ extension LineStreamExtensions on Stream<String> {
   /// Shorthand for `stream.bytes.pipe`.
   Future<void> operator >(StreamConsumer<List<int>> consumer) =>
       bytes.pipe(consumer);
+
+  /// Returns a stream of lines along with [FileSpan]s indicating the position
+  /// of those lines within the original source (assuming that this stream is
+  /// the entirety of the source).
+  ///
+  /// The [sourceUrl] argument provides the URL of the resulting spans. The
+  /// [sourcePath] argument is a shorthand for converting the path to a URL and
+  /// passing it to [sourceUrl]. The [sourceUrl] and [sourcePath] arguments may
+  /// not both be passed at once.
+  ///
+  /// See [LineAndSpanStreamExtensions].
+  Stream<Tuple2<String, SourceSpanWithContext>> withSpans(
+      {Uri? sourceUrl, String? sourcePath}) {
+    if (sourcePath != null) {
+      if (sourceUrl != null) {
+        throw ArgumentError("Only one of url and path may be passed.");
+      }
+      sourceUrl = p.toUri(sourcePath);
+    }
+
+    var lineNumber = 0;
+    var offset = 0;
+    return map((line) {
+      var span = SourceSpanWithContext(
+          SourceLocation(offset,
+              sourceUrl: sourceUrl, line: lineNumber, column: 0),
+          SourceLocation(offset + line.length,
+              sourceUrl: sourceUrl, line: lineNumber, column: line.length),
+          line,
+          line);
+      lineNumber++;
+      offset += line.length + 1;
+      return Tuple2(line, span);
+    });
+  }
 
   /// Returns the elements of [this] that match [regexp].
   ///
@@ -90,36 +127,7 @@ extension LineStreamExtensions on Stream<String> {
           bool caseSensitive = true,
           bool unicode = false,
           bool dotAll = false}) =>
-      replaceMapped(regexp, (match) {
-        var scanner = StringScanner(replacement);
-        var buffer = StringBuffer();
-
-        while (!scanner.isDone) {
-          var next = scanner.readChar();
-          if (next != $backslash) {
-            buffer.writeCharCode(next);
-            continue;
-          }
-
-          if (scanner.isDone) break;
-
-          next = scanner.readChar();
-          if (next >= $0 && next <= $9) {
-            var groupNumber = next - $0;
-            if (groupNumber > match.groupCount) {
-              scanner.error("RegExp doesn't have group $groupNumber.",
-                  position: scanner.position - 2, length: 2);
-            }
-
-            var group = match[groupNumber];
-            if (group != null) buffer.write(group);
-          } else {
-            buffer.writeCharCode(next);
-          }
-        }
-
-        return buffer.toString();
-      },
+      replaceMapped(regexp, (match) => replaceMatch(match, replacement),
           all: all,
           caseSensitive: caseSensitive,
           unicode: unicode,

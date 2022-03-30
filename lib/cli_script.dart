@@ -19,7 +19,9 @@ import 'package:async/async.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
+import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:tuple/tuple.dart';
 
 import 'src/config.dart';
 import 'src/exception.dart';
@@ -37,6 +39,7 @@ export 'src/extensions/byte_stream.dart';
 export 'src/extensions/chunk_list.dart';
 export 'src/extensions/line_list.dart';
 export 'src/extensions/line_stream.dart';
+export 'src/extensions/line_and_span_stream.dart';
 export 'src/extensions/string.dart';
 export 'src/exception.dart';
 export 'src/script.dart' hide scriptNameKey;
@@ -317,6 +320,13 @@ final teeToStderr = NamedStreamTransformer<String, String>.fromBind(
 /// }
 /// ```
 Stream<List<int>> read(String path) => File(path).openRead();
+
+/// Like [read], but includes source span information for each line in [path]
+/// that can be used to provide better error messages and easier debugging.
+///
+/// See [LineAndSpanStreamExtensions].
+Stream<Tuple2<String, SourceSpanWithContext>> readWithSpans(String path) =>
+    read(path).lines.withSpans(sourcePath: path);
 
 /// A shorthand for opening a sink that writes to the file at [path].
 ///
