@@ -22,7 +22,7 @@ dependencies:
 
 dev_dependencies:
   sass_analysis:
-    git: {url: git://github.com/sass/dart-sass, path: analysis}
+    git: {url: https://github.com/sass/dart-sass, path: analysis}
   test: ^1.16.8
   test_descriptor: ^2.0.0
 
