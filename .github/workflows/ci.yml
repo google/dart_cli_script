@@ -12,8 +12,8 @@ jobs:
     - uses: actions/checkout@v2
     - uses: dart-lang/setup-dart@v1
     - run: dart --version
-    - run: pub get
-    - run: dartanalyzer --fatal-infos --fatal-warnings .
+    - run: dart pub get
+    - run: dart analyze --fatal-infos --fatal-warnings .
 
   test:
     name: "Tests | Dart ${{ matrix.dart-channel }} | ${{ matrix.os }}"
@@ -35,8 +35,8 @@ jobs:
         sdk: ${{ matrix.dart-channel }}
     - run: dart --version
 
-    - run: pub get
-    - run: pub run test -r expanded
+    - run: dart pub get
+    - run: dart pub run test -r expanded
 
   format:
     name: "Code formatting"
