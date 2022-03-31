@@ -214,7 +214,7 @@ void main() {
         test("emits the matching parts of multiple matches per line", () async {
           var tuples = await Stream.fromIterable(["foo bar", "baz bang bop"])
               .withSpans()
-                .grep(r"[a-z]{3}", onlyMatching: true)
+              .grep(r"[a-z]{3}", onlyMatching: true)
               .toList();
 
           expect(tuples, hasLength(5));
@@ -228,7 +228,7 @@ void main() {
         test("preserves the context of multiple matches per line", () async {
           var tuples = await Stream.fromIterable(["foo bar", "baz bang bop"])
               .withSpans()
-                .grep(r"[a-z]{3}", onlyMatching: true)
+              .grep(r"[a-z]{3}", onlyMatching: true)
               .toList();
 
           expect(tuples, hasLength(5));
