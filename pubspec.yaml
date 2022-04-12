@@ -25,9 +25,3 @@ dev_dependencies:
     git: {url: https://github.com/sass/dart-sass, path: analysis}
   test: ^1.16.8
   test_descriptor: ^2.0.0
-
-dependency_overrides:
-  source_span:
-    git:
-      url: https://github.com/dart-lang/source_span
-      ref: context-subspan
