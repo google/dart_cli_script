@@ -1,3 +1,14 @@
+## 0.2.5
+
+* Add `LineStreamExtensions.withSpans()`, which adds `SourceSpanWithContext`s to
+  a stream's lines for better error messaging and debugging.
+
+* Add `readWithSpans()`, which adds `SourceSpanWithContext`s to a file's lines
+  for better error messaging and debugging.
+
+* Add `LineAndSpanStreamExtensions`, which provides various extension methods
+  that preserve source spans.
+
 ## 0.2.4
 
 * Add a `silenceUntilFailure()` function that suppresses output for a block of
