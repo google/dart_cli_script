@@ -1,5 +1,5 @@
 name: cli_script
-version: 0.2.5
+version: 0.2.6
 description:
   Write scripts that call subprocesses with the ease of shell scripting and the
   power of Dart.

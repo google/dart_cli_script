@@ -41,21 +41,32 @@ import 'util/entangled_controllers.dart';
 @sealed
 class BufferedScript extends Script {
   Stream<List<int>> get stdout {
-    // Even though we use our own stdout stream, access this so that the
-    // superclass knows not to forward it to the parent context.
-    super.stdout;
-    return _stdoutCompleter.stream;
+    var stdoutCompleter = _stdoutCompleter;
+    if (stdoutCompleter == null) {
+      return super.stdout;
+    } else {
+      // Even though we use our own stdout stream, access this so that the
+      // superclass knows not to forward it to the parent context.
+      super.stdout;
+      return stdoutCompleter.stream;
+    }
   }
 
   /// The completer that forwards [_stdoutBuffer] once [release] is called.
-  final _stdoutCompleter = StreamCompleter<List<int>>();
+  ///
+  /// This is null if this script is in stderr-only mode and stdout should be
+  /// forwarded as normal.
+  final StreamCompleter<List<int>>? _stdoutCompleter;
 
   /// A buffer of the inner script's stdout.
   ///
   /// We need to buffer this ourselves rather than relying on the inner script's
   /// buffer because once the inner [Script.done] completes, its stdio streams
   /// will emit done events rather than replaying their buffers.
-  final StreamController<List<int>> _stdoutBuffer;
+  ///
+  /// This is null if this script is in stderr-only mode and stdout should be
+  /// forwarded as normal.
+  final StreamController<List<int>>? _stdoutBuffer;
 
   Stream<List<int>> get stderr {
     // Even though we use our own stderr stream, access this so that the
@@ -76,26 +87,40 @@ class BufferedScript extends Script {
 
   /// Like [Script.capture], but all output is silently buffered until [release]
   /// is called.
+  ///
+  /// If [stderrOnly] is passed, this will only buffer the [stderr] stream. The
+  /// [stdout] stream will be emitted immediately as for a normal [Script].
   factory BufferedScript.capture(
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
-      {String? name}) {
-    var controllers = createEntangledControllers<List<int>>();
-    return BufferedScript._(
-        Script.capture(callback, name: name ?? "BufferedScript.capture"),
-        controllers.item1,
-        controllers.item2);
+      {String? name,
+      bool stderrOnly = false}) {
+    var inner =
+        Script.capture(callback, name: name ?? "BufferedScript.capture");
+
+    if (stderrOnly) {
+      return BufferedScript._(inner, null, StreamController<List<int>>());
+    } else {
+      var controllers = createEntangledControllers<List<int>>();
+      return BufferedScript._(inner, controllers.item1, controllers.item2);
+    }
   }
 
   /// A helper constructor that allows [BufferedScript.capture] to pass in both
   /// [_stdoutBuffer] and [_stderrBuffer] from a single call to
   /// [createEntangledControllers].
   BufferedScript._(Script script, this._stdoutBuffer, this._stderrBuffer)
-      : super.fromComponentsInternal(
+      : _stdoutCompleter =
+            _stdoutBuffer == null ? null : StreamCompleter<List<int>>(),
+        super.fromComponentsInternal(
             script.name,
             () => ScriptComponents(
-                script.stdin, Stream.empty(), Stream.empty(), script.exitCode),
+                script.stdin,
+                _stdoutBuffer == null ? script.stdout : Stream.empty(),
+                Stream.empty(),
+                script.exitCode),
             silenceStartMessage: true) {
-    script.stdout.pipe(_stdoutBuffer);
+    var stdoutBuffer = _stdoutBuffer;
+    if (stdoutBuffer != null) script.stdout.pipe(stdoutBuffer);
     script.stderr.pipe(_stderrBuffer);
 
     // Don't consider errors unhandled by default. This allows users to wait to
@@ -111,10 +136,12 @@ class BufferedScript extends Script {
   /// However, unlike [done], the returned future will *not* emit an error even
   /// if the script fails.
   Future<void> release() => _releaseMemo.runOnce(() async {
-        _stdoutCompleter.setSourceStream(_stdoutBuffer.stream);
+        _stdoutCompleter?.setSourceStream(_stdoutBuffer!.stream);
         _stderrCompleter.setSourceStream(_stderrBuffer.stream);
 
-        await Future.wait([_stdoutBuffer.done, _stderrBuffer.done]);
+        var stdoutBuffer = _stdoutBuffer;
+        await Future.wait(
+            [if (stdoutBuffer != null) stdoutBuffer.done, _stderrBuffer.done]);
 
         // Give outer stdio listeners a chance to handle the IO.
         await Future<void>.delayed(Duration.zero);
