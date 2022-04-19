@@ -95,11 +95,13 @@ T silenceOutput<T>(T callback()) {
 /// forwarded to the returned script's [Script.stdout] and [Script.stderr]
 /// streams.
 ///
-/// If [when] is false, this doesn't silence any output.
+/// If [when] is false, this doesn't silence any output. If [stderrOnly] is
+/// false, this only silences stderr and passes stdout on as normal.
 Script silenceUntilFailure(
     FutureOr<void> Function(Stream<List<int>> stdin) callback,
     {String? name,
-    bool? when}) {
+    bool? when,
+    bool stderrOnly = false}) {
   // Wrap this in an additional [Script.capture] so that we can both handle the
   // failure *and* still have it be top-leveled if it's not handled by the
   // caller.
@@ -110,7 +112,7 @@ Script silenceUntilFailure(
     }
 
     var script = BufferedScript.capture((_) => callback(stdin),
-        name: name == null ? null : '$name.inner');
+        name: name == null ? null : '$name.inner', stderrOnly: stderrOnly);
 
     try {
       await script.done;

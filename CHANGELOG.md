@@ -1,3 +1,10 @@
+## 0.2.6
+
+* Add a `stderrOnly` parameter to `BufferedScript.capture()` and
+  `silenceUntilFailure()`. If this parameter is `true`, only the `stderr` from
+  the callbacks will be buffered or silenced, and the `stdout` will be emitted
+  normally.
+
 ## 0.2.5
 
 * Add `LineStreamExtensions.withSpans()`, which adds `SourceSpanWithContext`s to

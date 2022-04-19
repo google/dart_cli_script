@@ -44,6 +44,16 @@ void main() {
     expect(stdoutDone, isTrue);
   });
 
+  test("forwards stdout if stderrOnly is true", () async {
+    var script = BufferedScript.capture((_) async {
+      print("foo");
+      print("bar");
+      print("baz");
+    }, stderrOnly: true);
+
+    expect(script.lines, emitsInOrder(['foo', 'bar', 'baz', emitsDone]));
+  });
+
   test("doesn't forward stderr until release() is called", () async {
     var script = BufferedScript.capture((_) async {
       currentStderr.writeln("foo");

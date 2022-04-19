@@ -289,6 +289,14 @@ void main() {
       });
     });
 
+    test("doesn't silence stdout with stderrOnly: true", () {
+      expect(
+          Script.capture((_) {
+            silenceUntilFailure((_) => print("howdy!"), stderrOnly: true);
+          }).lines,
+          emitsInOrder([emits("howdy!"), emitsDone]));
+    });
+
     group("releases stdio when the callback fails", () {
       test("synchronously", () {
         var script = Script.capture((_) {
