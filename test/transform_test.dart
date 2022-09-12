@@ -19,6 +19,8 @@ import 'package:test/test.dart';
 
 import 'package:cli_script/cli_script.dart';
 
+import 'util.dart';
+
 // Tests for utility stream transforms.
 void main() {
   group("withSpans", () {
@@ -406,6 +408,26 @@ void main() {
 
         await pumpEventQueue();
         expect(done, isTrue);
+      });
+
+      test("the script fails if the stream throws", () async {
+        var controller = StreamController<String>();
+        var script = controller.stream.xargs(print);
+        script.stderr.drain<void>();
+
+        controller.addError(Exception('oh no'));
+        expect(script.done, throwsScriptException(257));
+      });
+
+      test(
+          "the script fails preserving the exit code "
+          "if the stream throws a ScriptException", () async {
+        var controller = StreamController<String>();
+        var script = controller.stream.xargs(print);
+        script.stderr.drain<void>();
+
+        controller.addError(ScriptException('whatever', 42));
+        expect(script.done, throwsScriptException(42));
       });
 
       test("the script fails once a callback throws", () async {

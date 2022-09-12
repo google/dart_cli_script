@@ -90,12 +90,18 @@ class BufferedScript extends Script {
   ///
   /// If [stderrOnly] is passed, this will only buffer the [stderr] stream. The
   /// [stdout] stream will be emitted immediately as for a normal [Script].
+  ///
+  /// The [callback] can't be interrupted by calling [kill], but the [onSignal]
+  /// callback allows capturing those signals so the callback may react
+  /// appropriately. When no [onSignal] handler was set, calling [kill] will do
+  /// nothing and return `false`.
   factory BufferedScript.capture(
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
       {String? name,
+      bool onSignal(ProcessSignal signal)?,
       bool stderrOnly = false}) {
-    var inner =
-        Script.capture(callback, name: name ?? "BufferedScript.capture");
+    var inner = Script.capture(callback,
+        name: name ?? "BufferedScript.capture", onSignal: onSignal);
 
     if (stderrOnly) {
       return BufferedScript._(inner, null, StreamController<List<int>>());
@@ -118,6 +124,7 @@ class BufferedScript extends Script {
                 _stdoutBuffer == null ? script.stdout : Stream.empty(),
                 Stream.empty(),
                 script.exitCode),
+            script.kill,
             silenceStartMessage: true) {
     var stdoutBuffer = _stdoutBuffer;
     if (stdoutBuffer != null) script.stdout.pipe(stdoutBuffer);

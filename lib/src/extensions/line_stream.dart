@@ -14,16 +14,15 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:cli_script/cli_script.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:tuple/tuple.dart';
 
-import '../script.dart';
-import '../stdio.dart';
 import '../util.dart';
-import 'byte_stream.dart';
 
 /// Extensions on [Stream<String>] that treat it as a stream of discrete lines
 /// (as commonly emitted by a shell script).
@@ -181,22 +180,43 @@ extension LineStreamExtensions on Stream<String> {
   ///
   /// If [name] is passed, it's used as the name of the spawned script.
   ///
-  /// See also [LineStreamExtensions.xargs], which takes arguments from stdin
-  /// rather than from a string stream.
+  /// [Script.kill] closes the input stream. It returns `true` if the stream was
+  /// interrupted and the script exits with [Script.exitCode] `143`, or `false`
+  /// if the stream was already closed.
+  ///
+  /// The [callback] can't be interrupted by calling [kill], but the [onSignal]
+  /// callback allows capturing those signals so the callback may react
+  /// appropriately. Calling [kill] returns `true` even without an [onSignal]
+  /// callback if the stream is interrupted.
+  ///
+  /// See also `xargs` in `package:cli_script/cli_script.dart`, which takes
+  /// arguments from [stdin] rather than from this string stream.
   Script xargs(FutureOr<void> callback(List<String> args),
-      {int? maxArgs, String? name}) {
+      {int? maxArgs, String? name, void onSignal(ProcessSignal signal)?}) {
     if (maxArgs != null && maxArgs < 1) {
       throw RangeError.range(maxArgs, 1, null, 'maxArgs');
     }
 
-    return Script.capture((stdin) async {
-      if (maxArgs == null) {
-        await callback(await toList());
-      } else {
-        await for (var slice in slices(maxArgs)) {
-          await callback(slice);
-        }
-      }
-    }, name: name ?? 'xargs');
+    var signalCloser = StreamCloser<String>();
+    var self = transform(signalCloser);
+    var chunks =
+        maxArgs != null ? self.slices(maxArgs) : self.toList().asStream();
+
+    return Script.capture(
+        (_) async {
+          await for (var chunk in chunks) {
+            if (signalCloser.isClosed) break;
+            await callback(chunk);
+          }
+          if (signalCloser.isClosed) {
+            throw ScriptException(name ?? 'xargs', 143);
+          }
+        },
+        name: name,
+        onSignal: (signal) {
+          signalCloser.close();
+          if (onSignal != null) onSignal(signal);
+          return true;
+        });
   }
 }

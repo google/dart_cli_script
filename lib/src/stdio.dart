@@ -97,11 +97,17 @@ T silenceOutput<T>(T callback()) {
 ///
 /// If [when] is false, this doesn't silence any output. If [stderrOnly] is
 /// false, this only silences stderr and passes stdout on as normal.
+///
+/// The [callback] can't be interrupted by calling [kill], but the [onSignal]
+/// callback allows capturing those signals so the callback may react
+/// appropriately. When no [onSignal] handler was set, calling [kill] will do
+/// nothing and return `false`.
 Script silenceUntilFailure(
     FutureOr<void> Function(Stream<List<int>> stdin) callback,
     {String? name,
     bool? when,
-    bool stderrOnly = false}) {
+    bool stderrOnly = false,
+    bool onSignal(ProcessSignal signal)?}) {
   // Wrap this in an additional [Script.capture] so that we can both handle the
   // failure *and* still have it be top-leveled if it's not handled by the
   // caller.
@@ -123,5 +129,5 @@ Script silenceUntilFailure(
       await Future<void>.delayed(Duration.zero);
       rethrow;
     }
-  }, name: name);
+  }, name: name, onSignal: onSignal);
 }

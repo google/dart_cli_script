@@ -1,3 +1,10 @@
+## 0.3.0
+
+* Add `Script.kill()` to send a `ProcessSignal` such as `SIGKILL` or `SIGTERM`
+  to terminate a script or stream. Defaults to `SIGTERM`. Capturing functions
+  like `Script.capture` or `silenceUntilFailure` can't terminate their callbacks
+  but the `ProcessSignal` can be reacted to via their new `onSignal` handler.
+
 ## 0.2.7
 
 * Ensure that `Script`s always cancel streams piped to their `stdin` sinks after
