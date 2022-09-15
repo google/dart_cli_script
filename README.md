@@ -32,7 +32,7 @@ import 'package:cli_script/cli_script.dart';
 
 void main() {
   wrapMain(() async {
-    await run('echo "Hello, world!");
+    await run('echo "Hello, world!"');
   });
 }
 ```
