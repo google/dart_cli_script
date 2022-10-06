@@ -323,4 +323,15 @@ void main() {
       });
     });
   });
+
+  test("a script cancels its stdin subscription when it exits", () async {
+    var canceled = false;
+    var controller =
+        StreamController<List<int>>(onCancel: () => canceled = true);
+    var script = Script.capture((_) => Future.delayed(Duration.zero));
+    controller.stream | script;
+
+    await script.done;
+    expect(canceled, isTrue);
+  });
 }

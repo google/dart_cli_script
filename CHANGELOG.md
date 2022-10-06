@@ -1,3 +1,9 @@
+## 0.2.7
+
+* Ensure that `Script`s always cancel streams piped to their `stdin` sinks after
+  exiting. This prevents rare cases where programs could deadlock waiting for
+  events to be processed.
+
 ## 0.2.6
 
 * Add a `stderrOnly` parameter to `BufferedScript.capture()` and

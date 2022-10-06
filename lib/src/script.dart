@@ -77,7 +77,10 @@ class Script {
   final String name;
 
   /// The standard input stream that's used to pass data into the process.
-  final IOSink stdin;
+  late final IOSink stdin;
+
+  /// A transformer used to forcibly cancel streams being piped to [stdin]
+  final _stdinCloser = StreamCloser<List<int>>();
 
   /// The script's standard output stream, typically used to emit data it
   /// produces.
@@ -479,10 +482,11 @@ class Script {
   ///
   /// If [silenceStartMessage] is `false` (the default), this prints a message
   /// in debug mode indicating that the script has started running.
-  Script._(this.name, StreamConsumer<List<int>> stdin, Stream<List<int>> stdout,
+  Script._(this.name, StreamSink<List<int>> stdin, Stream<List<int>> stdout,
       Stream<List<int>> stderr, Future<int> exitCode,
-      {bool silenceStartMessage = false})
-      : stdin = IOSink(stdin) {
+      {bool silenceStartMessage = false}) {
+    this.stdin = IOSink(stdin
+        .transform(StreamSinkTransformer.fromStreamTransformer(_stdinCloser)));
     if (!silenceStartMessage) debug("[$name] starting");
 
     _stdout = stdout.handleError(_handleError).transform(_outputCloser);
@@ -509,6 +513,7 @@ class Script {
 
       _closeOutputStreams();
       _extraStderrController.close();
+      _stdinCloser.close();
     }, onError: _handleError);
 
     // Forward streams after a macrotask elapses to give the user time to start
@@ -530,7 +535,7 @@ class Script {
       // accessed by this point, there's no need to wait longer for their events
       // to propagate further so we mark [_doneCompleter] as ready
       // synchronously.
-      if (_stdoutAccessed && _stdoutAccessed) {
+      if (_stdoutAccessed && _stderrAccessed) {
         _doneCompleter.ready();
       } else {
         Timer.run(_doneCompleter.ready);
