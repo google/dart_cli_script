@@ -15,7 +15,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
@@ -62,7 +61,7 @@ export 'src/temp.dart';
 /// will be folded together to make stack traces more readable. If
 /// [verboseTrace] is `true`, the full stack traces will be printed instead.
 ///
-/// If [debug] is `true`, extra information about [Script]s' lifecycels will be
+/// If [debug] is `true`, extra information about [Script]s' lifecycles will be
 /// printed directly to stderr. As the name suggests, this is intended for use
 /// only when debugging.
 void wrapMain(FutureOr<void> callback(),
@@ -398,23 +397,29 @@ IOSink append(String path) => File(path).openWrite(mode: FileMode.append);
 ///
 /// If [name] is passed, it's used as the name of the spawned script.
 ///
+/// [Script.kill] closes the input stream. It returns `true` if the stream was
+/// interrupted and the script exits with [Script.exitCode] `143`, or `false`
+/// if the stream was already closed.
+///
+/// The [callback] can't be interrupted by calling [kill], but the [onSignal]
+/// callback allows capturing those signals so the callback may react
+/// appropriately. Calling [kill] returns `true` even without an [onSignal]
+/// callback if the stream is interrupted.
+///
 /// See also [LineStreamExtensions.xargs], which takes arguments directly from
-/// an existing string stream rather than stdin.
+/// an existing string stream rather than [stdin].
 Script xargs(FutureOr<void> callback(List<String> args),
-    {int? maxArgs, String? name}) {
+    {int? maxArgs, String? name, void onSignal(ProcessSignal signal)?}) {
   if (maxArgs != null && maxArgs < 1) {
     throw RangeError.range(maxArgs, 1, null, 'maxArgs');
   }
 
+  late Script script;
   return Script.capture((stdin) async {
-    if (maxArgs == null) {
-      await callback(await stdin.lines.toList());
-    } else {
-      await for (var slice in stdin.lines.slices(maxArgs)) {
-        await callback(slice);
-      }
-    }
-  }, name: name ?? 'xargs');
+    script = stdin.lines
+        .xargs(callback, maxArgs: maxArgs, name: name, onSignal: onSignal);
+    await script.done;
+  }, onSignal: (signal) => script.kill(signal));
 }
 
 /// Returns a stream of all paths on disk matching [glob].

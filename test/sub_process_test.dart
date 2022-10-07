@@ -45,9 +45,8 @@ void main() {
       expect(mainScript("exitCode = 234;").done, throwsScriptException(234));
     });
 
-    test("is non-zero for a script that can't be found", () {
+    test("is non-zero for a script that can't be found", () async {
       var script = Script("non-existent-executable");
-      script.stderr.drain<void>();
       expect(script.success, completion(isFalse));
     });
   });
