@@ -16,6 +16,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:io' as io;
+import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:meta/meta.dart';
@@ -698,6 +699,13 @@ class Script {
   /// returns a non-zero exit code.
   Future<String> get output async =>
       (await Future.wait([stdout.text, done]))[0] as String;
+
+  /// Returns this script's stdout as bytes.
+  ///
+  /// Like `collectBytes(stdout)`, but throws a [ScriptException] if the
+  /// executable returns a non-zero exit code.
+  Future<Uint8List> get outputBytes async =>
+      (await Future.wait([collectBytes(stdout), done]))[0] as Uint8List;
 
   /// Returns a stream of lines [this] prints to stdout.
   ///
