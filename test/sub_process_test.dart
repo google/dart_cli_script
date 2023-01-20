@@ -166,6 +166,18 @@ void main() {
     });
   });
 
+  group("outputBytes", () {
+    test("returns the script's output as bytes", () {
+      expect(mainScript("print('hello!');").outputBytes,
+          completion(equals(utf8.encode("hello!\n"))));
+    });
+
+    test("completes with a ScriptException if the script fails", () {
+      expect(mainScript("print('hello!'); exitCode = 12;").outputBytes,
+          throwsScriptException(12));
+    });
+  });
+
   group("lines", () {
     test("returns the script's stdout lines", () {
       expect(mainScript(r"print('hello\nthere!');").lines,

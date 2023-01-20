@@ -1,3 +1,8 @@
+## 0.3.1
+
+* Add `Script.outputBytes`, which works like `Script.output` but returns the raw
+  bytes instead of a string representation.
+
 ## 0.3.0
 
 * Add `Script.kill()` to send a `ProcessSignal` such as `SIGKILL` or `SIGTERM`
