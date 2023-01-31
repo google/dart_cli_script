@@ -95,6 +95,18 @@ void main() {
             expect(stream.lines, emits("hello!"));
           })));
     });
+
+    test("does not block with a large chunk of data", () async {
+      var payloadSize = (1 << 16) + 1;
+      // This must be an actual script. [Script.capture] won't fail.
+      var script = mainScript('stderr.write("." * $payloadSize);');
+      var controller = StreamController<List<int>>();
+      script.stderr > controller.sink;
+
+      await script.done;
+
+      expect((await controller.stream.text).length, payloadSize);
+    }, timeout: Timeout(Duration(seconds: 3)));
   });
 
   group("subprocess environment", () {
