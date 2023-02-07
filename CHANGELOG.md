@@ -1,4 +1,9 @@
-## 0.3.1
+## 0.4.0
+
+* Breaking change: The `>` operator now eagerly subscribes to the stream before
+piping to the `StreamConsumer`. This fixes a bug where `Script.done` would never
+complete if either `Script.stdout` or `Script.stderr` is piped with `>` and
+its output is larger than 16 KiB.
 
 * Add `Script.outputBytes`, which works like `Script.output` but returns the raw
   bytes instead of a string representation.

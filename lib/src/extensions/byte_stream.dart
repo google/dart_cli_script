@@ -81,6 +81,19 @@ extension ByteStreamExtensions on Stream<List<int>> {
     });
   }
 
-  /// Shorthand for [Stream.pipe].
-  Future<void> operator >(StreamConsumer<List<int>> consumer) => pipe(consumer);
+  /// Eagerly pipes events from [this] stream into [consumer].
+  ///
+  /// This operator behaves like [pipe], but it creates a subscription that
+  /// eagerly reads data from [this] stream. This avoids deadlocks when the
+  /// backing stream do not emit a `done` event because they are waiting on data
+  /// to be read first. For example, [Process.stdout] blocks when [pipe]d if it
+  /// contains more than 16 KiB.
+  Future<void> operator >(StreamConsumer<List<int>> consumer) {
+    var controller = StreamController<List<int>>();
+    listen(controller.add,
+        cancelOnError: true,
+        onDone: controller.sink.close,
+        onError: controller.sink.addError);
+    return controller.stream.pipe(consumer);
+  }
 }

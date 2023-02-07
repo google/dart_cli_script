@@ -95,6 +95,36 @@ void main() {
             expect(stream.lines, emits("hello!"));
           })));
     });
+
+    test("does not block with a large chunk of data", () async {
+      var payloadSize = (1 << 16) + 1;
+      // This must be an actual script. [Script.capture] won't fail.
+      var script = mainScript('stderr.write("." * $payloadSize);');
+      var controller = StreamController<List<int>>();
+      script.stderr > controller.sink;
+
+      // The test must await the script's completion rather than using async
+      // test matchers to assert the same behavior observed in production code.
+      // Otherwise, this test will incorrectly pass.
+      await script.done;
+
+      expect(controller.stream.text, completion(hasLength(payloadSize)));
+    }, timeout: Timeout(Duration(seconds: 3)));
+
+    test("does not block with a stream transformer", () async {
+      var script = Script.fromByteTransformer(zlib.decoder);
+      script.stdin.add(zlib.encode(utf8.encode("*")));
+      var controller = StreamController<List<int>>();
+      script.stdout > controller.sink;
+      script.stdin.close();
+
+      // The test must await the script's completion rather than using async
+      // test matchers to assert the same behavior observed in production code.
+      // Otherwise, this test will incorrectly pass.
+      await script.done;
+
+      expect(controller.stream.text, completion(equals('*')));
+    }, timeout: Timeout(Duration(seconds: 3)));
   });
 
   group("subprocess environment", () {
