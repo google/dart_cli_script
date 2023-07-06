@@ -4,6 +4,10 @@
 
 * Expose the `args()` function, which shell-escapes multiple arguments at once.
 
+## 0.3.2
+
+* Declare support for Dart 3.
+
 ## 0.3.1
 
 * Add `Script.outputBytes`, which works like `Script.output` but returns the raw
