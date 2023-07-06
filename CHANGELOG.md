@@ -1,5 +1,9 @@
 ## 1.0.0
 
+* Stable release.
+
+* Expose the `args()` function, which shell-escapes multiple arguments at once.
+
 * Update internal type annotations for compatibility with [dart-lang/sdk#52801].
 
   [dart-lang/sdk#52801]: https://github.com/dart-lang/sdk/issues/52801
