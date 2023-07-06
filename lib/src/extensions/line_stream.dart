@@ -28,7 +28,8 @@ import '../util.dart';
 /// (as commonly emitted by a shell script).
 extension LineStreamExtensions on Stream<String> {
   /// Converts this to a byte stream with newlines baked in.
-  Stream<List<int>> get bytes => map((line) => utf8.encode("$line\n"));
+  Stream<List<int>> get bytes =>
+      map<List<int>>((line) => utf8.encode("$line\n"));
 
   /// Pipes [this] into [script]'s [stdin] with newlines baked in.
   ///

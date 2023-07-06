@@ -386,7 +386,7 @@ class Script {
       Script.fromByteTransformer(
           StreamTransformer.fromBind((stream) => stream.lines
               .transform(transformer)
-              .map((line) => utf8.encode("$line\n"))),
+              .map<List<int>>((line) => utf8.encode("$line\n"))),
           name: name ?? transformer.toString());
 
   /// Creates a [Script] from a function that maps strings to strings.
