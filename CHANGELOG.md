@@ -1,3 +1,9 @@
+## 1.0.0
+
+* Update internal type annotations for compatibility with [dart-lang/sdk#52801].
+
+  [dart-lang/sdk#52801]: https://github.com/dart-lang/sdk/issues/52801
+
 ## 0.3.2
 
 * Declare support for Dart 3.
