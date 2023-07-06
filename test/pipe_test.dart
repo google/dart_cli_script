@@ -289,9 +289,9 @@ void main() {
   group("pipes in", () {
     group("a byte stream", () {
       test("without errors", () {
-        var pipeline =
-            Stream.fromIterable([utf8.encode("foo"), utf8.encode("bar")]) |
-                mainScript("stdin.pipe(stdout);");
+        var pipeline = Stream<List<int>>.fromIterable(
+                [utf8.encode("foo"), utf8.encode("bar")]) |
+            mainScript("stdin.pipe(stdout);");
         expect(pipeline.stdout.lines, emitsInOrder(["foobar", emitsDone]));
       });
 
