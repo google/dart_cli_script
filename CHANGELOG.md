@@ -1,3 +1,9 @@
+## 1.0.0
+
+* Stable release.
+
+* Expose the `args()` function, which shell-escapes multiple arguments at once.
+
 ## 0.3.1
 
 * Add `Script.outputBytes`, which works like `Script.output` but returns the raw
