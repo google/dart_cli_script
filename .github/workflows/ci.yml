@@ -3,17 +3,37 @@ on:
   push: {branches: [master]}
   pull_request:
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
-    name: "Static analysis"
+    name: "Static analysis (Code)"
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: dart-lang/setup-dart@v1
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with: {persist-credentials: false}
+    - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
     - run: dart --version
     - run: dart pub get
     - run: dart analyze --fatal-infos --fatal-warnings .
+
+  analyze_ci:
+    name: Static analysis (GitHub Actions)
+    runs-on: ubuntu-latest
+
+    permissions:
+      security-events: write # Required by upload-sarif
+      actions: read # Required by upload-sarif
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with: {persist-credentials: false}
+    - uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
+      with: {persona: pedantic}
 
   test:
     name: "Tests | Dart ${{ matrix.dart-channel }} | ${{ matrix.os }}"
@@ -27,10 +47,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with: {persist-credentials: false}
+    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
 
-    - uses: dart-lang/setup-dart@v1
+    - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
       with:
         sdk: ${{ matrix.dart-channel }}
     - run: dart --version
@@ -43,8 +64,11 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: dart-lang/setup-dart@v1
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with: {persist-credentials: false}
+    - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
     - run: dart --version
-    - run: dart format --fix .
+    - run: dart pub get
+    - run: dart format .
+    - run: dart fix --apply
     - run: git diff --exit-code
