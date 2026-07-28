@@ -82,13 +82,17 @@ class _StdioGroupSink extends IOSinkBase implements IOSink {
     encoding = utf8;
   }
 
+  @override
   void onAdd(List<int> data) => _sink.add(data);
 
+  @override
   void onError(Object error, [StackTrace? stackTrace]) =>
       _sink.addError(error, stackTrace);
 
+  @override
   void onClose() {}
 
   /// All writes are flushed automatically as soon as the stream is listened.
+  @override
   Future<void> onFlush() => Future.value();
 }

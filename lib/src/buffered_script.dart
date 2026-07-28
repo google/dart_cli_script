@@ -40,6 +40,7 @@ import 'util/entangled_controllers.dart';
 /// running, or only if they fail.
 @sealed
 class BufferedScript extends Script {
+  @override
   Stream<List<int>> get stdout {
     var stdoutCompleter = _stdoutCompleter;
     if (stdoutCompleter == null) {
@@ -68,6 +69,7 @@ class BufferedScript extends Script {
   /// forwarded as normal.
   final StreamController<List<int>>? _stdoutBuffer;
 
+  @override
   Stream<List<int>> get stderr {
     // Even though we use our own stderr stream, access this so that the
     // superclass knows not to forward it to the parent context.
@@ -98,7 +100,7 @@ class BufferedScript extends Script {
   factory BufferedScript.capture(
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
       {String? name,
-      bool onSignal(ProcessSignal signal)?,
+      bool Function(ProcessSignal signal)? onSignal,
       bool stderrOnly = false}) {
     var inner = Script.capture(callback,
         name: name ?? "BufferedScript.capture", onSignal: onSignal);

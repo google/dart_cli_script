@@ -56,7 +56,7 @@ IOSink get currentStderr {
 ///
 /// Returns the same result as [callback]. Doesn't add any special error
 /// handling.
-T silenceStdout<T>(T callback()) {
+T silenceStdout<T>(T Function() callback) {
   var group = StdioGroup();
   group.stream.drain<void>();
   return runZoned(callback,
@@ -68,7 +68,7 @@ T silenceStdout<T>(T callback()) {
 ///
 /// Returns the same result as [callback]. Doesn't add any special error
 /// handling.
-T silenceStderr<T>(T callback()) {
+T silenceStderr<T>(T Function() callback) {
   var group = StdioGroup();
   group.stream.drain<void>();
   return runZoned(callback, zoneValues: {stderrKey: group});
@@ -79,7 +79,7 @@ T silenceStderr<T>(T callback()) {
 ///
 /// Returns the same result as [callback]. Doesn't add any special error
 /// handling.
-T silenceOutput<T>(T callback()) {
+T silenceOutput<T>(T Function() callback) {
   var group = StdioGroup();
   group.stream.drain<void>();
   return runZoned(callback,
@@ -107,7 +107,7 @@ Script silenceUntilFailure(
     {String? name,
     bool? when,
     bool stderrOnly = false,
-    bool onSignal(ProcessSignal signal)?}) {
+    bool Function(ProcessSignal signal)? onSignal}) {
   // Wrap this in an additional [Script.capture] so that we can both handle the
   // failure *and* still have it be top-leveled if it's not handled by the
   // caller.

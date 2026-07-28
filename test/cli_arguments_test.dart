@@ -256,14 +256,14 @@ void main() {
 
 /// Runs [callback] in two groups: one restricted to Windows with `glob: null`,
 /// and one on all OSes with `glob: false`.
-void onWindowsOrWithGlobFalse(void callback(bool? glob)) {
+void onWindowsOrWithGlobFalse(void Function(bool? glob) callback) {
   group("on Windows", () => callback(null), testOn: "windows");
   group("with glob: false", () => callback(false));
 }
 
 /// Runs [callback] in two groups: one restricted to non-Windows OSes with
 /// `glob: null`, and one on all OSes with `glob: true`.
-void onPosixOrWithGlobTrue(void callback(bool? glob)) {
+void onPosixOrWithGlobTrue(void Function(bool? glob) callback) {
   group("on non-Windows OSes", () => callback(null), testOn: "!windows");
   group("with glob: true", () => callback(true));
 }

@@ -44,7 +44,7 @@ const _slugCharacters = 16;
 /// basename. If [suffix] is passed, it's added to the end. If [parent] is
 /// passed, it's used as the parent directory for the path; it defaults to
 /// [Directory.systemTemp].
-T withTempPath<T>(T callback(String path),
+T withTempPath<T>(T Function(String path) callback,
     {String? prefix, String? suffix, String? parent}) {
   var path = _tempPathName(prefix, suffix, parent);
   return tryFinally(() => callback(path), () {
@@ -62,7 +62,7 @@ T withTempPath<T>(T callback(String path),
 /// Note that even [withTempPath] can safely be used with an asynchronous
 /// [callback]. This function is only necessary if you need the automatic
 /// filesystem operations to be asynchronous.
-Future<T> withTempPathAsync<T>(FutureOr<T> callback(String path),
+Future<T> withTempPathAsync<T>(FutureOr<T> Function(String path) callback,
     {String? prefix, String? suffix, String? parent}) async {
   var path = _tempPathName(prefix, suffix, parent);
   try {
@@ -89,7 +89,7 @@ Future<T> withTempPathAsync<T>(FutureOr<T> callback(String path),
 /// directory's basename. If [suffix] is passed, it's added to the end. If
 /// [parent] is passed, the temporary directory is created within that path;
 /// otherwise, it's created within [Directory.systemTemp].
-T withTempDir<T>(T callback(String dir),
+T withTempDir<T>(T Function(String dir) callback,
         {String? prefix, String? suffix, String? parent}) =>
     withTempPath((path) {
       Directory(path).createSync();
@@ -102,7 +102,7 @@ T withTempDir<T>(T callback(String dir),
 /// Note that even [withTempDir] can safely be used with an asynchronous
 /// [callback]. This function is only necessary if you need the automatic
 /// filesystem operations to be asynchronous.
-Future<T> withTempDirAsync<T>(FutureOr<T> callback(String dir),
+Future<T> withTempDirAsync<T>(FutureOr<T> Function(String dir) callback,
         {String? prefix, String? suffix, String? parent}) =>
     withTempPathAsync((path) async {
       await Directory(path).create();

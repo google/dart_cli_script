@@ -93,7 +93,7 @@ extension LineAndSpanStreamExtensions
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
   /// [new RegExp].
   Stream<Tuple2<String, SourceSpanWithContext>> replaceMapped(
-      String regexp, String replace(Match match),
+      String regexp, String Function(Match match) replace,
       {bool all = false,
       bool caseSensitive = true,
       bool unicode = false,

@@ -140,7 +140,8 @@ extension LineStreamExtensions on Stream<String> {
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
   /// [new RegExp].
-  Stream<String> replaceMapped(String regexp, String replace(Match match),
+  Stream<String> replaceMapped(
+      String regexp, String Function(Match match) replace,
       {bool all = false,
       bool caseSensitive = true,
       bool unicode = false,
@@ -192,8 +193,10 @@ extension LineStreamExtensions on Stream<String> {
   ///
   /// See also `xargs` in `package:cli_script/cli_script.dart`, which takes
   /// arguments from [stdin] rather than from this string stream.
-  Script xargs(FutureOr<void> callback(List<String> args),
-      {int? maxArgs, String? name, void onSignal(ProcessSignal signal)?}) {
+  Script xargs(FutureOr<void> Function(List<String> args) callback,
+      {int? maxArgs,
+      String? name,
+      void Function(ProcessSignal signal)? onSignal}) {
     if (maxArgs != null && maxArgs < 1) {
       throw RangeError.range(maxArgs, 1, null, 'maxArgs');
     }

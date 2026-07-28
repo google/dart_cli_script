@@ -192,7 +192,8 @@ void main() {
 }
 
 /// Defines tests for either stdout or for stderr.
-void stdoutOrStderr(String name, Stream<List<int>> stream(Script script)) {
+void stdoutOrStderr(
+    String name, Stream<List<int>> Function(Script script) stream) {
   group(name, () {
     test("forwards $name from the subprocess and closes", () {
       expect(stream(mainScript("$name.writeln('Hello!');")).lines,
