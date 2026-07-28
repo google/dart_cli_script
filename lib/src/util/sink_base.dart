@@ -116,6 +116,7 @@ abstract class StreamSinkBase<T> extends EventSinkBase<T>
 /// called or during a call to [onStream].
 abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   /// See [IOSink.encoding] from `dart:io`.
+  @override
   Encoding encoding;
 
   IOSinkBase([this.encoding = utf8]);
@@ -129,6 +130,7 @@ abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   /// all events are delivered. They should also call `super.flush()` at the
   /// beginning of the method to throw a [StateError] if the sink is currently
   /// adding a stream.
+  @override
   Future<void> flush() {
     if (_addingStream) throw StateError('StreamSink is bound to a stream');
     if (_closed) return Future.value();
@@ -145,6 +147,7 @@ abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   Future<void> onFlush();
 
   /// See [IOSink.write] from `dart:io`.
+  @override
   void write(Object? object) {
     var string = object.toString();
     if (string.isEmpty) return;
@@ -152,6 +155,7 @@ abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   }
 
   /// See [IOSink.writeAll] from `dart:io`.
+  @override
   void writeAll(Iterable<Object?> objects, [String separator = '']) {
     var first = true;
     for (var object in objects) {
@@ -166,12 +170,14 @@ abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   }
 
   /// See [IOSink.writeln] from `dart:io`.
+  @override
   void writeln([Object? object = '']) {
     write(object);
     write('\n');
   }
 
   /// See [IOSink.writeCharCode] from `dart:io`.
+  @override
   void writeCharCode(int charCode) {
     write(String.fromCharCode(charCode));
   }

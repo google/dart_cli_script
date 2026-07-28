@@ -248,14 +248,14 @@ void main() {
     test("replaces the first match", () {
       expect(
           Stream.fromIterable(["foo", "bar baz", "boz bop"])
-              .replaceMapped(r"b(.)", (match) => match[1]! + "q"),
+              .replaceMapped(r"b(.)", (match) => "${match[1]!}q"),
           emitsInOrder(["foo", "aqr baz", "oqz bop", emitsDone]));
     });
 
     test("replaces all matches with all: true", () {
       expect(
           Stream.fromIterable(["foo", "bar baz", "boz bop"])
-              .replaceMapped(r"b(.)", (match) => match[1]! + "q", all: true),
+              .replaceMapped(r"b(.)", (match) => "${match[1]!}q", all: true),
           emitsInOrder(["foo", "aqr aqz", "oqz oqp", emitsDone]));
     });
   });

@@ -26,5 +26,6 @@ class ScriptException implements Exception {
     }
   }
 
+  @override
   String toString() => "$scriptName failed with exit code $exitCode.";
 }

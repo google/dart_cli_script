@@ -64,7 +64,7 @@ export 'src/temp.dart';
 /// If [debug] is `true`, extra information about [Script]s' lifecycles will be
 /// printed directly to stderr. As the name suggests, this is intended for use
 /// only when debugging.
-void wrapMain(FutureOr<void> callback(),
+void wrapMain(FutureOr<void> Function() callback,
     {bool chainStackTraces = true,
     bool? printScriptException,
     bool verboseTrace = false,
@@ -279,7 +279,7 @@ StreamTransformer<String, String> replace(String regexp, String replacement,
 /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
 /// [new RegExp].
 StreamTransformer<String, String> replaceMapped(
-        String regexp, String replace(Match match),
+        String regexp, String Function(Match match) replace,
         {bool all = false,
         bool caseSensitive = true,
         bool unicode = false,
@@ -408,8 +408,10 @@ IOSink append(String path) => File(path).openWrite(mode: FileMode.append);
 ///
 /// See also [LineStreamExtensions.xargs], which takes arguments directly from
 /// an existing string stream rather than [stdin].
-Script xargs(FutureOr<void> callback(List<String> args),
-    {int? maxArgs, String? name, void onSignal(ProcessSignal signal)?}) {
+Script xargs(FutureOr<void> Function(List<String> args) callback,
+    {int? maxArgs,
+    String? name,
+    void Function(ProcessSignal signal)? onSignal}) {
   if (maxArgs != null && maxArgs < 1) {
     throw RangeError.range(maxArgs, 1, null, 'maxArgs');
   }

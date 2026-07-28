@@ -19,7 +19,7 @@ import 'package:string_scanner/string_scanner.dart';
 
 /// Runs [onFinally] after [callback] completes, whether it returns a [Future]
 /// or a synchronous value.
-T tryFinally<T>(T callback(), void onFinally()) {
+T tryFinally<T>(T Function() callback, void Function() onFinally) {
   late T result;
   try {
     result = callback();
@@ -71,7 +71,7 @@ String replaceMatch(Match match, String replacement) {
 extension UtilStreamExtensions<T> on Stream<T> {
   /// Returns a transformation of [this] that calls [callback] immediately
   /// before sending a `done` event to its listeners.
-  Stream<T> onDone(void callback()) =>
+  Stream<T> onDone(void Function() callback) =>
       transform(StreamTransformer.fromHandlers(handleDone: (sink) {
         callback();
         sink.close();

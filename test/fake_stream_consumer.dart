@@ -20,7 +20,9 @@ class FakeStreamConsumer<T> implements StreamConsumer<T> {
 
   FakeStreamConsumer(this._implementation);
 
+  @override
   Future<void> addStream(Stream<T> stream) => _implementation(stream);
 
+  @override
   Future<void> close() => Future.value();
 }

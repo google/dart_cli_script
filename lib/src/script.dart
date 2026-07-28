@@ -282,7 +282,7 @@ class Script {
   factory Script.capture(
       FutureOr<void> Function(Stream<List<int>> stdin) callback,
       {String? name,
-      bool onSignal(ProcessSignal signal)?}) {
+      bool Function(ProcessSignal signal)? onSignal}) {
     _checkCapture();
 
     var scriptName = name ?? "capture";
@@ -485,8 +485,9 @@ class Script {
   /// callback allows capturing those signals so the callback may react
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
-  Script.fromComponents(String name, FutureOr<ScriptComponents> callback(),
-      {bool onSignal(ProcessSignal signal)?})
+  Script.fromComponents(
+      String name, FutureOr<ScriptComponents> Function() callback,
+      {bool Function(ProcessSignal signal)? onSignal})
       : this.fromComponentsInternal(name, callback, onSignal ?? (_) => false,
             silenceStartMessage: false);
 
@@ -497,8 +498,8 @@ class Script {
   @internal
   Script.fromComponentsInternal(
       String name,
-      FutureOr<ScriptComponents> callback(),
-      bool signalHandler(ProcessSignal signal),
+      FutureOr<ScriptComponents> Function() callback,
+      bool Function(ProcessSignal signal) signalHandler,
       {required bool silenceStartMessage})
       : this._fromComponentsInternal(
             _checkCapture(),
@@ -522,11 +523,11 @@ class Script {
       // the surrounding capture is closed before scheduling [callback].
       void checkCapture,
       String name,
-      FutureOr<ScriptComponents> callback(),
+      FutureOr<ScriptComponents> Function() callback,
       StreamCompleter<List<int>> stdoutCompleter,
       StreamCompleter<List<int>> stderrCompleter,
       StreamSinkCompleter<List<int>> stdinCompleter,
-      bool signalHandler(ProcessSignal signal),
+      bool Function(ProcessSignal signal) signalHandler,
       {required bool silenceStartMessage})
       : this._(
             name,
@@ -659,12 +660,13 @@ class Script {
     } else {
       var chain = terseChain(Chain.forTrace(trace));
       if (inDebugMode) {
-        debug("[$name] exited with Dart exception:\n" +
-            "$error\n$chain"
-                .trimRight()
-                .split("\n")
-                .map((line) => "| $line")
-                .join("\n"));
+        var exception = "$error\n$chain"
+            .trimRight()
+            .split("\n")
+            .map((line) => "| $line")
+            .join("\n");
+        debug("[$name] exited with Dart exception:\n"
+            "$exception");
       }
 
       // Otherwise, if this is an unexpected Dart error, print information about

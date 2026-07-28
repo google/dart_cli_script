@@ -170,30 +170,45 @@ class _EntangledController<T> extends StreamSinkBase<T>
   StreamController<T> get _outputController =>
       _isController1 ? _buffer.controller1 : _buffer.controller2;
 
+  @override
   Future<void> get done => _outputController.done;
+  @override
   bool get hasListener => _outputController.hasListener;
+  @override
   bool get isClosed => _outputController.isClosed;
+  @override
   bool get isPaused => _outputController.isPaused;
+  @override
   Stream<T> get stream => _outputController.stream;
 
+  @override
   FutureOr<void> Function()? get onCancel => _outputController.onCancel;
+  @override
   set onCancel(FutureOr<void> Function()? value) =>
       _outputController.onCancel = value;
 
+  @override
   void Function()? get onListen => _outputController.onListen;
+  @override
   set onListen(void Function()? value) =>
       throw UnsupportedError("Entangled controllers can't set onListen");
 
+  @override
   void Function()? get onPause => _outputController.onPause;
+  @override
   set onPause(void Function()? value) => _outputController.onPause = value;
 
+  @override
   void Function()? get onResume => _outputController.onResume;
+  @override
   set onResume(void Function()? value) => _outputController.onResume = value;
 
+  @override
   StreamSink<T> get sink => this;
 
   _EntangledController(this._buffer, this._isController1);
 
+  @override
   Future<void> addStream(Stream<T> stream, {bool? cancelOnError}) {
     if (cancelOnError == true) {
       stream = stream.transform(StreamTransformer(
@@ -203,10 +218,13 @@ class _EntangledController<T> extends StreamSinkBase<T>
     return super.addStream(stream);
   }
 
+  @override
   void onAdd(T event) => _buffer.add(_isController1, event);
 
+  @override
   void onError(Object error, [StackTrace? stackTrace]) =>
       _buffer.addError(_isController1, error, stackTrace);
 
+  @override
   void onClose() => _buffer.close(_isController1);
 }

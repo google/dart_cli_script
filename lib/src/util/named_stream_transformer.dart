@@ -23,25 +23,31 @@ class NamedStreamTransformer<S, T> implements StreamTransformer<S, T> {
   /// The implementation of the [bind] method.
   final Stream<T> Function(Stream<S>) _bind;
 
-  NamedStreamTransformer(this._name,
-      StreamSubscription<T> onListen(Stream<S> stream, bool cancelOnError))
+  NamedStreamTransformer(
+      this._name,
+      StreamSubscription<T> Function(Stream<S> stream, bool cancelOnError)
+          onListen)
       : _bind = StreamTransformer(onListen).bind;
 
   NamedStreamTransformer.fromBind(this._name, this._bind);
 
   NamedStreamTransformer.fromHandlers(this._name,
-      {void handleData(S data, EventSink<T> sink)?,
-      void handleError(Object error, StackTrace stackTrace, EventSink<T> sink)?,
-      void handleDone(EventSink<T> sink)?})
+      {void Function(S data, EventSink<T> sink)? handleData,
+      void Function(Object error, StackTrace stackTrace, EventSink<T> sink)?
+          handleError,
+      void Function(EventSink<T> sink)? handleDone})
       : _bind = StreamTransformer.fromHandlers(
                 handleData: handleData,
                 handleError: handleError,
                 handleDone: handleDone)
             .bind;
 
+  @override
   Stream<T> bind(Stream<S> stream) => _bind(stream);
 
+  @override
   StreamTransformer<RS, RT> cast<RS, RT>() => StreamTransformer.castFrom(this);
 
+  @override
   String toString() => _name;
 }

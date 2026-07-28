@@ -47,7 +47,7 @@ Chain terseChain(Chain chain) => Zone.current[#_verboseTrace] == true
 ///
 /// If [verboseTrace] is `true`, full stack traces will be printed for
 /// exceptions. If [debug] is `true`, extra information will be printed.
-T withConfig<T>(T callback(),
+T withConfig<T>(T Function() callback,
         {bool verboseTrace = false, bool debug = false}) =>
     runZoned(callback,
         zoneValues: {#_debug: debug, #_verboseTrace: verboseTrace});
