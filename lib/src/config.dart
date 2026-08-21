@@ -24,7 +24,7 @@ const _packagesToFold = {
   'collection',
   'glob',
   'path',
-  'string_scanner'
+  'string_scanner',
 };
 
 /// Returns whether debug mode is currently active.
@@ -40,14 +40,20 @@ void debug(String message) {
 /// mode.
 Chain terseChain(Chain chain) => Zone.current[#_verboseTrace] == true
     ? chain
-    : chain.foldFrames((frame) => _packagesToFold.contains(frame.package),
-        terse: true);
+    : chain.foldFrames(
+        (frame) => _packagesToFold.contains(frame.package),
+        terse: true,
+      );
 
 /// Runs [callback] with the given configuration values set.
 ///
 /// If [verboseTrace] is `true`, full stack traces will be printed for
 /// exceptions. If [debug] is `true`, extra information will be printed.
-T withConfig<T>(T Function() callback,
-        {bool verboseTrace = false, bool debug = false}) =>
-    runZoned(callback,
-        zoneValues: {#_debug: debug, #_verboseTrace: verboseTrace});
+T withConfig<T>(
+  T Function() callback, {
+  bool verboseTrace = false,
+  bool debug = false,
+}) => runZoned(
+  callback,
+  zoneValues: {#_debug: debug, #_verboseTrace: verboseTrace},
+);

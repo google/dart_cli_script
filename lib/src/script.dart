@@ -117,10 +117,13 @@ class Script {
   ///
   /// See also [success], which should be preferred when simply checking whether
   /// the script has succeeded.
-  Future<int> get exitCode => done.then((_) => 0, onError: (Object error, _) {
-        if (error is! ScriptException) throw error;
-        return error.exitCode;
-      });
+  Future<int> get exitCode => done.then(
+    (_) => 0,
+    onError: (Object error, _) {
+      if (error is! ScriptException) throw error;
+      return error.exitCode;
+    },
+  );
 
   /// Whether the script succeeded or failed (that is, whether it emitted an
   /// exit code of `0`).
@@ -187,57 +190,73 @@ class Script {
   /// executable name. All other arguments are forwarded to [Process.start].
   ///
   /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
-  factory Script(String executableAndArgs,
-      {Iterable<String>? args,
-      String? name,
-      String? workingDirectory,
-      Map<String, String>? environment,
-      bool includeParentEnvironment = true,
-      bool runInShell = false}) {
+  factory Script(
+    String executableAndArgs, {
+    Iterable<String>? args,
+    String? name,
+    String? workingDirectory,
+    Map<String, String>? environment,
+    bool includeParentEnvironment = true,
+    bool runInShell = false,
+  }) {
     var parsedExecutableAndArgs = CliArguments.parse(executableAndArgs);
 
     name ??= p.basename(parsedExecutableAndArgs.executable);
     ProcessSignal? capturedSignal;
     Process? process;
-    return Script.fromComponentsInternal(name, () async {
-      if (includeParentEnvironment) {
-        environment = environment == null
-            ? env
-            // Use [withEnv] to ensure that the copied environment correctly
-            // overrides the parent [env], including handling case-insensitive
-            // keys on Windows.
-            : withEnv(() => env, environment!);
-      }
+    return Script.fromComponentsInternal(
+      name,
+      () async {
+        if (includeParentEnvironment) {
+          environment = environment == null
+              ? env
+              // Use [withEnv] to ensure that the copied environment correctly
+              // overrides the parent [env], including handling case-insensitive
+              // keys on Windows.
+              : withEnv(() => env, environment!);
+        }
 
-      var allArgs = [
-        ...await parsedExecutableAndArgs.arguments(root: workingDirectory),
-        ...?args
-      ];
+        var allArgs = [
+          ...await parsedExecutableAndArgs.arguments(root: workingDirectory),
+          ...?args,
+        ];
 
-      if (inDebugMode) {
-        // dart-lang/language#1536
-        debug("[${name!}] ${parsedExecutableAndArgs.executable} "
-            "${allArgs.join(' ')}");
-      }
+        if (inDebugMode) {
+          // dart-lang/language#1536
+          debug(
+            "[${name!}] ${parsedExecutableAndArgs.executable} "
+            "${allArgs.join(' ')}",
+          );
+        }
 
-      process = await Process.start(parsedExecutableAndArgs.executable, allArgs,
+        process = await Process.start(
+          parsedExecutableAndArgs.executable,
+          allArgs,
           workingDirectory: workingDirectory,
           environment: environment,
           includeParentEnvironment: false,
-          runInShell: runInShell);
+          runInShell: runInShell,
+        );
 
-      // Passes the [capturedSignal] received by the [Script.kill] function to
-      // the [Process.kill] function if the signal was received before the
-      // process started.
-      if (capturedSignal != null) process!.kill(capturedSignal!);
+        // Passes the [capturedSignal] received by the [Script.kill] function to
+        // the [Process.kill] function if the signal was received before the
+        // process started.
+        if (capturedSignal != null) process!.kill(capturedSignal!);
 
-      return ScriptComponents(
-          process!.stdin, process!.stdout, process!.stderr, process!.exitCode);
-    }, (signal) {
-      if (process != null) return process!.kill(signal);
-      capturedSignal = signal;
-      return true;
-    }, silenceStartMessage: true);
+        return ScriptComponents(
+          process!.stdin,
+          process!.stdout,
+          process!.stderr,
+          process!.exitCode,
+        );
+      },
+      (signal) {
+        if (process != null) return process!.kill(signal);
+        capturedSignal = signal;
+        return true;
+      },
+      silenceStartMessage: true,
+    );
   }
 
   /// Runs [callback] and captures the output of [Script]s created within it.
@@ -280,9 +299,10 @@ class Script {
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
   factory Script.capture(
-      FutureOr<void> Function(Stream<List<int>> stdin) callback,
-      {String? name,
-      bool Function(ProcessSignal signal)? onSignal}) {
+    FutureOr<void> Function(Stream<List<int>> stdin) callback, {
+    String? name,
+    bool Function(ProcessSignal signal)? onSignal,
+  }) {
     _checkCapture();
 
     var scriptName = name ?? "capture";
@@ -294,50 +314,59 @@ class Script {
     var exitCodeCompleter = Completer<int>();
 
     runZonedGuarded(
-        () async {
-          if (onSignal != null) {
-            onSignal = Zone.current.bindUnaryCallback(onSignal!);
-          }
+      () async {
+        if (onSignal != null) {
+          onSignal = Zone.current.bindUnaryCallback(onSignal!);
+        }
 
-          await callback(stdinController.stream);
+        await callback(stdinController.stream);
 
-          // Once there are no child scripts still spawning or running, mark
-          // this script as done.
-          void checkIdle() {
-            if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
-              stdoutGroup.close();
-              stderrGroup.close();
-              childScripts.close();
-              exitCodeCompleter.complete(0);
-            }
-          }
-
-          checkIdle();
-          childScripts.onIdle.listen((_) => Timer.run(checkIdle));
-        },
-        (error, stackTrace) {
-          if (!exitCodeCompleter.isCompleted) {
+        // Once there are no child scripts still spawning or running, mark
+        // this script as done.
+        void checkIdle() {
+          if (childScripts.isIdle && !exitCodeCompleter.isCompleted) {
             stdoutGroup.close();
             stderrGroup.close();
             childScripts.close();
-            exitCodeCompleter.completeError(error, stackTrace);
+            exitCodeCompleter.complete(0);
           }
-        },
-        zoneValues: {
-          #_childScripts: childScripts,
-          scriptNameKey: scriptName,
-          stdoutKey: stdoutGroup,
-          stderrKey: stderrGroup
-        },
-        zoneSpecification: ZoneSpecification(print: (_, parent, zone, line) {
-          if (!exitCodeCompleter.isCompleted) stdoutGroup.writeln(line);
-        }));
+        }
 
-    return Script._(scriptName, stdinController.sink, stdoutGroup.stream,
-        stderrGroup.stream, exitCodeCompleter.future, (signal) {
-      if (onSignal == null) return false;
-      return onSignal!(signal);
-    });
+        checkIdle();
+        childScripts.onIdle.listen((_) => Timer.run(checkIdle));
+      },
+      (error, stackTrace) {
+        if (!exitCodeCompleter.isCompleted) {
+          stdoutGroup.close();
+          stderrGroup.close();
+          childScripts.close();
+          exitCodeCompleter.completeError(error, stackTrace);
+        }
+      },
+      zoneValues: {
+        #_childScripts: childScripts,
+        scriptNameKey: scriptName,
+        stdoutKey: stdoutGroup,
+        stderrKey: stderrGroup,
+      },
+      zoneSpecification: ZoneSpecification(
+        print: (_, parent, zone, line) {
+          if (!exitCodeCompleter.isCompleted) stdoutGroup.writeln(line);
+        },
+      ),
+    );
+
+    return Script._(
+      scriptName,
+      stdinController.sink,
+      stdoutGroup.stream,
+      stderrGroup.stream,
+      exitCodeCompleter.future,
+      (signal) {
+        if (onSignal == null) return false;
+        return onSignal!(signal);
+      },
+    );
   }
 
   /// Creates a [Script] from a [StreamTransformer] on byte streams.
@@ -350,8 +379,9 @@ class Script {
   /// exits with [Script.exitCode] `143`, or `false` if the stream was already
   /// closed.
   factory Script.fromByteTransformer(
-      StreamTransformer<List<int>, List<int>> transformer,
-      {String? name}) {
+    StreamTransformer<List<int>, List<int>> transformer, {
+    String? name,
+  }) {
     _checkCapture();
     var controller = StreamController<List<int>>();
     var exitCodeCompleter = Completer<int>.sync();
@@ -360,8 +390,12 @@ class Script {
     return Script._(
       name ?? transformer.toString(),
       controller.sink,
-      controller.stream.transform(signalCloser).transform(transformer).onDone(
-          () => exitCodeCompleter.complete(signalCloser.isClosed ? 143 : 0)),
+      controller.stream
+          .transform(signalCloser)
+          .transform(transformer)
+          .onDone(
+            () => exitCodeCompleter.complete(signalCloser.isClosed ? 143 : 0),
+          ),
       Stream.empty(),
       exitCodeCompleter.future,
       (_) {
@@ -381,23 +415,28 @@ class Script {
   /// exits with [Script.exitCode] `143`, or `false` if the stream was already
   /// closed.
   factory Script.fromLineTransformer(
-          StreamTransformer<String, String> transformer,
-          {String? name}) =>
-      Script.fromByteTransformer(
-          StreamTransformer.fromBind((stream) => stream.lines
-              .transform(transformer)
-              .map<List<int>>((line) => utf8.encode("$line\n"))),
-          name: name ?? transformer.toString());
+    StreamTransformer<String, String> transformer, {
+    String? name,
+  }) => Script.fromByteTransformer(
+    StreamTransformer.fromBind(
+      (stream) => stream.lines
+          .transform(transformer)
+          .map<List<int>>((line) => utf8.encode("$line\n")),
+    ),
+    name: name ?? transformer.toString(),
+  );
 
   /// Creates a [Script] from a function that maps strings to strings.
   ///
   /// This script passes each line of stdin to [mapper] and emits the result via
   /// stdout.
-  factory Script.mapLines(String Function(String line) mapper,
-          {String? name}) =>
-      Script.fromLineTransformer(
-          StreamTransformer.fromBind((stream) => stream.map(mapper)),
-          name: name ?? mapper.toString());
+  factory Script.mapLines(
+    String Function(String line) mapper, {
+    String? name,
+  }) => Script.fromLineTransformer(
+    StreamTransformer.fromBind((stream) => stream.map(mapper)),
+    name: name ?? mapper.toString(),
+  );
 
   /// Pipes each script's [stdout] into the next script's [stdin].
   ///
@@ -436,16 +475,19 @@ class Script {
     }
 
     return Script._(
-        name ?? list.map((script) => script.name).join(" | "),
-        list.first.stdin,
-        // Wrap the final script's stdout and stderr in [SubscriptionStream]s so
-        // that the inner scripts will see that someone's listening and not try
-        // to top-level the streams' output.
-        SubscriptionStream(list.last.stdout.listen(null)),
-        SubscriptionStream(list.last.stderr.listen(null)),
-        Future.wait(list.map((script) => script.exitCode)).then((exitCodes) =>
-            exitCodes.lastWhere((code) => code != 0, orElse: () => 0)),
-        (signal) => list.any((script) => script.kill(signal)));
+      name ?? list.map((script) => script.name).join(" | "),
+      list.first.stdin,
+      // Wrap the final script's stdout and stderr in [SubscriptionStream]s so
+      // that the inner scripts will see that someone's listening and not try
+      // to top-level the streams' output.
+      SubscriptionStream(list.last.stdout.listen(null)),
+      SubscriptionStream(list.last.stderr.listen(null)),
+      Future.wait(list.map((script) => script.exitCode)).then(
+        (exitCodes) =>
+            exitCodes.lastWhere((code) => code != 0, orElse: () => 0),
+      ),
+      (signal) => list.any((script) => script.kill(signal)),
+    );
   }
 
   /// Converts [scriptlike] into a [Script], or throws an [ArgumentError] if it
@@ -461,7 +503,8 @@ class Script {
       return Script.mapLines(scriptlike);
     } else {
       throw ArgumentError(
-          "$scriptlike is not a Script and can't be converted to one.");
+        "$scriptlike is not a Script and can't be converted to one.",
+      );
     }
   }
 
@@ -486,10 +529,15 @@ class Script {
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
   Script.fromComponents(
-      String name, FutureOr<ScriptComponents> Function() callback,
-      {bool Function(ProcessSignal signal)? onSignal})
-      : this.fromComponentsInternal(name, callback, onSignal ?? (_) => false,
-            silenceStartMessage: false);
+    String name,
+    FutureOr<ScriptComponents> Function() callback, {
+    bool Function(ProcessSignal signal)? onSignal,
+  }) : this.fromComponentsInternal(
+         name,
+         callback,
+         onSignal ?? (_) => false,
+         silenceStartMessage: false,
+       );
 
   /// Like [Script.fromComponents], but with an internal [silenceStartMessage]
   /// option that's forwarded to [Script._].
@@ -497,19 +545,20 @@ class Script {
   /// @nodoc
   @internal
   Script.fromComponentsInternal(
-      String name,
-      FutureOr<ScriptComponents> Function() callback,
-      bool Function(ProcessSignal signal) signalHandler,
-      {required bool silenceStartMessage})
-      : this._fromComponentsInternal(
-            _checkCapture(),
-            name,
-            callback,
-            StreamCompleter(),
-            StreamCompleter(),
-            StreamSinkCompleter(),
-            signalHandler,
-            silenceStartMessage: silenceStartMessage);
+    String name,
+    FutureOr<ScriptComponents> Function() callback,
+    bool Function(ProcessSignal signal) signalHandler, {
+    required bool silenceStartMessage,
+  }) : this._fromComponentsInternal(
+         _checkCapture(),
+         name,
+         callback,
+         StreamCompleter(),
+         StreamCompleter(),
+         StreamSinkCompleter(),
+         signalHandler,
+         silenceStartMessage: silenceStartMessage,
+       );
 
   /// A helper method for [Script.fromComponentsInternal] that takes a bunch of
   /// intermediate values as parameters so it can refer to them multiple times
@@ -519,34 +568,38 @@ class Script {
   /// factory constructor, but then it and [Script.fromComponents] couldn't be
   /// invoked by  subclasses.
   Script._fromComponentsInternal(
-      // A void parameter is pretty nasty, but it allows us to throw an error if
-      // the surrounding capture is closed before scheduling [callback].
-      void checkCapture,
-      String name,
-      FutureOr<ScriptComponents> Function() callback,
-      StreamCompleter<List<int>> stdoutCompleter,
-      StreamCompleter<List<int>> stderrCompleter,
-      StreamSinkCompleter<List<int>> stdinCompleter,
-      bool Function(ProcessSignal signal) signalHandler,
-      {required bool silenceStartMessage})
-      : this._(
-            name,
-            stdinCompleter.sink.rejectErrors(),
-            stdoutCompleter.stream,
-            stderrCompleter.stream,
-            Future.sync(callback).then((components) {
-              stdinCompleter.setDestinationSink(components.stdin);
-              stdoutCompleter.setSourceStream(components.stdout);
-              stderrCompleter.setSourceStream(components.stderr);
-              return components.exitCode;
-            }),
-            signalHandler,
-            silenceStartMessage: silenceStartMessage);
+    // A void parameter is pretty nasty, but it allows us to throw an error if
+    // the surrounding capture is closed before scheduling [callback].
+    void checkCapture,
+    String name,
+    FutureOr<ScriptComponents> Function() callback,
+    StreamCompleter<List<int>> stdoutCompleter,
+    StreamCompleter<List<int>> stderrCompleter,
+    StreamSinkCompleter<List<int>> stdinCompleter,
+    bool Function(ProcessSignal signal) signalHandler, {
+    required bool silenceStartMessage,
+  }) : this._(
+         name,
+         stdinCompleter.sink.rejectErrors(),
+         stdoutCompleter.stream,
+         stderrCompleter.stream,
+         Future.sync(callback).then((components) {
+           stdinCompleter.setDestinationSink(components.stdin);
+           stdoutCompleter.setSourceStream(components.stdout);
+           stderrCompleter.setSourceStream(components.stderr);
+           return components.exitCode;
+         }),
+         signalHandler,
+         silenceStartMessage: silenceStartMessage,
+       );
 
   /// Pipes [stream]'s events to a [StdioGroup] indexed by [key] in the current
   /// zone if it exists, or else to [defaultConsumer] if it doesn't.
   static void _pipeUnlistenedStream(
-      Stream<List<int>> stream, Object key, Sink<List<int>> defaultConsumer) {
+    Stream<List<int>> stream,
+    Object key,
+    Sink<List<int>> defaultConsumer,
+  ) {
     var group = Zone.current[key];
     if (group is StdioGroup) {
       group.add(stream);
@@ -559,11 +612,20 @@ class Script {
   ///
   /// If [silenceStartMessage] is `false` (the default), this prints a message
   /// in debug mode indicating that the script has started running.
-  Script._(this.name, StreamSink<List<int>> stdin, Stream<List<int>> stdout,
-      Stream<List<int>> stderr, Future<int> exitCode, this._signalHandler,
-      {bool silenceStartMessage = false}) {
-    this.stdin = IOSink(stdin
-        .transform(StreamSinkTransformer.fromStreamTransformer(_stdinCloser)));
+  Script._(
+    this.name,
+    StreamSink<List<int>> stdin,
+    Stream<List<int>> stdout,
+    Stream<List<int>> stderr,
+    Future<int> exitCode,
+    this._signalHandler, {
+    bool silenceStartMessage = false,
+  }) {
+    this.stdin = IOSink(
+      stdin.transform(
+        StreamSinkTransformer.fromStreamTransformer(_stdinCloser),
+      ),
+    );
     if (!silenceStartMessage) debug("[$name] starting");
 
     _stdout = stdout.handleError(_handleError).transform(_outputCloser);
@@ -585,7 +647,9 @@ class Script {
       } else {
         debug("[$name] exited with exit code $code");
         _doneCompleter.completeError(
-            ScriptException(name, code), StackTrace.current);
+          ScriptException(name, code),
+          StackTrace.current,
+        );
       }
 
       _closeOutputStreams();
@@ -641,8 +705,10 @@ class Script {
     if (childScripts.isClosed) {
       // The FutureGroup is closed, indicating that the surrounding capture
       // group has already exited.
-      throw StateError("Can't create a Script within a Script.capture() block "
-          "that already exited.");
+      throw StateError(
+        "Can't create a Script within a Script.capture() block "
+        "that already exited.",
+      );
     }
 
     return childScripts;
@@ -665,20 +731,28 @@ class Script {
             .split("\n")
             .map((line) => "| $line")
             .join("\n");
-        debug("[$name] exited with Dart exception:\n"
-            "$exception");
+        debug(
+          "[$name] exited with Dart exception:\n"
+          "$exception",
+        );
       }
 
       // Otherwise, if this is an unexpected Dart error, print information about
       // it to stderr and exit with code 257. That code is higher than actual
       // subprocesses can emit, so it can be used as a sentinel to detect
       // Dart-based failures.
-      _extraStderrController.add(utf8.encode("Error in $name:\n"
+      _extraStderrController.add(
+        utf8.encode(
+          "Error in $name:\n"
           "$error\n"
-          "$chain\n"));
+          "$chain\n",
+        ),
+      );
       _extraStderrController.close();
       _doneCompleter.completeError(
-          ScriptException(name, 257), StackTrace.current);
+        ScriptException(name, 257),
+        StackTrace.current,
+      );
     }
 
     _closeOutputStreams();

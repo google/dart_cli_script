@@ -24,23 +24,24 @@ class NamedStreamTransformer<S, T> implements StreamTransformer<S, T> {
   final Stream<T> Function(Stream<S>) _bind;
 
   NamedStreamTransformer(
-      this._name,
-      StreamSubscription<T> Function(Stream<S> stream, bool cancelOnError)
-          onListen)
-      : _bind = StreamTransformer(onListen).bind;
+    this._name,
+    StreamSubscription<T> Function(Stream<S> stream, bool cancelOnError)
+    onListen,
+  ) : _bind = StreamTransformer(onListen).bind;
 
   NamedStreamTransformer.fromBind(this._name, this._bind);
 
-  NamedStreamTransformer.fromHandlers(this._name,
-      {void Function(S data, EventSink<T> sink)? handleData,
-      void Function(Object error, StackTrace stackTrace, EventSink<T> sink)?
-          handleError,
-      void Function(EventSink<T> sink)? handleDone})
-      : _bind = StreamTransformer.fromHandlers(
-                handleData: handleData,
-                handleError: handleError,
-                handleDone: handleDone)
-            .bind;
+  NamedStreamTransformer.fromHandlers(
+    this._name, {
+    void Function(S data, EventSink<T> sink)? handleData,
+    void Function(Object error, StackTrace stackTrace, EventSink<T> sink)?
+    handleError,
+    void Function(EventSink<T> sink)? handleDone,
+  }) : _bind = StreamTransformer.fromHandlers(
+         handleData: handleData,
+         handleError: handleError,
+         handleDone: handleDone,
+       ).bind;
 
   @override
   Stream<T> bind(Stream<S> stream) => _bind(stream);

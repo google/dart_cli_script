@@ -45,13 +45,15 @@ class StdioGroup {
   static Tuple2<StdioGroup, StdioGroup> entangled() {
     var controllers = createEntangledControllers<List<int>>();
     return Tuple2(
-        StdioGroup._(controllers.item1), StdioGroup._(controllers.item2));
+      StdioGroup._(controllers.item1),
+      StdioGroup._(controllers.item2),
+    );
   }
 
   StdioGroup() : this._(StreamController(sync: true));
 
   StdioGroup._(this._sinkController)
-      : sink = _StdioGroupSink(_sinkController.sink) {
+    : sink = _StdioGroupSink(_sinkController.sink) {
     _group.add(_sinkController.stream);
   }
 

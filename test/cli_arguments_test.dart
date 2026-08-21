@@ -32,8 +32,10 @@ void main() {
 
       onPosixOrWithGlobTrue((glob) {
         test("for a string containing an invalid glob", () {
-          expect(() => CliArguments.parse("a [", glob: glob),
-              throwsFormatException);
+          expect(
+            () => CliArguments.parse("a [", glob: glob),
+            throwsFormatException,
+          );
         });
       });
     });
@@ -110,8 +112,10 @@ void main() {
       });
 
       test("with plain text adjacent to quotes", () async {
-        expect(await _resolve("\"foo bar\"baz'bip bop'"),
-            equals(["foo barbazbip bop"]));
+        expect(
+          await _resolve("\"foo bar\"baz'bip bop'"),
+          equals(["foo barbazbip bop"]),
+        );
       });
 
       onWindowsOrWithGlobFalse((glob) {
@@ -131,8 +135,10 @@ void main() {
       });
 
       test("with different quoting styles", () async {
-        expect(await _resolve("a \"b c\" 'd e' f\\ g"),
-            equals(["a", "b c", "d e", "f g"]));
+        expect(
+          await _resolve("a \"b c\" 'd e' f\\ g"),
+          equals(["a", "b c", "d e", "f g"]),
+        );
       });
     });
   });
@@ -157,8 +163,10 @@ void main() {
         var pattern = p.join(Glob.quote(d.sandbox), "*.txt");
         var args = await _resolve("ls $pattern", glob: glob);
         expect(args.first, equals("ls"));
-        expect(args.sublist(1),
-            unorderedEquals([d.path("foo.txt"), d.path("bar.txt")]));
+        expect(
+          args.sublist(1),
+          unorderedEquals([d.path("foo.txt"), d.path("bar.txt")]),
+        );
       });
 
       test("ignores glob characters in quotes", () async {
@@ -166,7 +174,9 @@ void main() {
         await d.file("bar.txt").create();
         await d.file("baz.zip").create();
         expect(
-            await _resolve("ls '*.txt'", glob: glob), equals(["ls", "*.txt"]));
+          await _resolve("ls '*.txt'", glob: glob),
+          equals(["ls", "*.txt"]),
+        );
       });
 
       test("ignores backslash-escaped glob characters", () async {
@@ -174,7 +184,9 @@ void main() {
         await d.file("bar.txt").create();
         await d.file("baz.zip").create();
         expect(
-            await _resolve(r"ls \*.txt", glob: glob), equals(["ls", "*.txt"]));
+          await _resolve(r"ls \*.txt", glob: glob),
+          equals(["ls", "*.txt"]),
+        );
       });
 
       test("returns plain strings for globs that don't match", () async {

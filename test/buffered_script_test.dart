@@ -85,15 +85,16 @@ void main() {
     });
 
     expect(
-        script.combineOutput().lines,
-        emitsInOrder([
-          "stdout 1",
-          "stderr 1",
-          "stdout 2",
-          "stderr 2",
-          "stdout 3",
-          "stderr 3"
-        ]));
+      script.combineOutput().lines,
+      emitsInOrder([
+        "stdout 1",
+        "stderr 1",
+        "stdout 2",
+        "stderr 2",
+        "stdout 3",
+        "stderr 3",
+      ]),
+    );
 
     await pumpEventQueue();
     await script.release();
@@ -195,18 +196,20 @@ void main() {
   group("makes available through done", () {
     test("a script failure", () async {
       expect(
-          BufferedScript.capture((_) {
-            throw ScriptException("script", 123);
-          }).done,
-          throwsScriptException(123));
+        BufferedScript.capture((_) {
+          throw ScriptException("script", 123);
+        }).done,
+        throwsScriptException(123),
+      );
     });
 
     test("a Dart exception", () async {
       expect(
-          BufferedScript.capture((_) {
-            throw "oh no";
-          }).done,
-          throwsScriptException(257));
+        BufferedScript.capture((_) {
+          throw "oh no";
+        }).done,
+        throwsScriptException(257),
+      );
     });
   });
 }

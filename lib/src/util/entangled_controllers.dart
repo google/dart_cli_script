@@ -30,7 +30,7 @@ import 'sink_base.dart';
 /// Note: these controllers are effectively synchronous, and so should only have
 /// events added to them at the end of event loops.
 Tuple2<StreamController<T>, StreamController<T>>
-    createEntangledControllers<T>() {
+createEntangledControllers<T>() {
   var buffer = _EntangledBuffer<T>();
 
   var controller1 = _EntangledController<T>(buffer, true);
@@ -67,8 +67,8 @@ class _EntangledBuffer<T> {
   final StreamController<T> controller2;
 
   _EntangledBuffer()
-      : controller1 = StreamController(sync: true),
-        controller2 = StreamController(sync: true) {
+    : controller1 = StreamController(sync: true),
+      controller2 = StreamController(sync: true) {
     controller1.onListen = _flush;
     controller2.onListen = _flush;
   }
@@ -211,8 +211,11 @@ class _EntangledController<T> extends StreamSinkBase<T>
   @override
   Future<void> addStream(Stream<T> stream, {bool? cancelOnError}) {
     if (cancelOnError == true) {
-      stream = stream.transform(StreamTransformer(
-          (stream, _) => stream.listen(null, cancelOnError: true)));
+      stream = stream.transform(
+        StreamTransformer(
+          (stream, _) => stream.listen(null, cancelOnError: true),
+        ),
+      );
     }
 
     return super.addStream(stream);

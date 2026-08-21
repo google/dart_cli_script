@@ -67,18 +67,24 @@ extension ByteStreamExtensions on Stream<List<int>> {
   /// closed.
   Script get _asScript {
     var signalCloser = StreamCloser<List<int>>();
-    return Script.fromComponents("stream", () {
-      var exitCodeCompleter = Completer<int>.sync();
-      return ScriptComponents(
+    return Script.fromComponents(
+      "stream",
+      () {
+        var exitCodeCompleter = Completer<int>.sync();
+        return ScriptComponents(
           NullStreamSink(),
-          transform(signalCloser).onDone(() =>
-              exitCodeCompleter.complete(signalCloser.isClosed ? 143 : 0)),
+          transform(signalCloser).onDone(
+            () => exitCodeCompleter.complete(signalCloser.isClosed ? 143 : 0),
+          ),
           Stream.empty(),
-          exitCodeCompleter.future);
-    }, onSignal: (_) {
-      signalCloser.close();
-      return true;
-    });
+          exitCodeCompleter.future,
+        );
+      },
+      onSignal: (_) {
+        signalCloser.close();
+        return true;
+      },
+    );
   }
 
   /// Shorthand for [Stream.pipe].

@@ -98,12 +98,16 @@ class BufferedScript extends Script {
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
   factory BufferedScript.capture(
-      FutureOr<void> Function(Stream<List<int>> stdin) callback,
-      {String? name,
-      bool Function(ProcessSignal signal)? onSignal,
-      bool stderrOnly = false}) {
-    var inner = Script.capture(callback,
-        name: name ?? "BufferedScript.capture", onSignal: onSignal);
+    FutureOr<void> Function(Stream<List<int>> stdin) callback, {
+    String? name,
+    bool Function(ProcessSignal signal)? onSignal,
+    bool stderrOnly = false,
+  }) {
+    var inner = Script.capture(
+      callback,
+      name: name ?? "BufferedScript.capture",
+      onSignal: onSignal,
+    );
 
     if (stderrOnly) {
       return BufferedScript._(inner, null, StreamController<List<int>>());
@@ -117,17 +121,20 @@ class BufferedScript extends Script {
   /// [_stdoutBuffer] and [_stderrBuffer] from a single call to
   /// [createEntangledControllers].
   BufferedScript._(Script script, this._stdoutBuffer, this._stderrBuffer)
-      : _stdoutCompleter =
-            _stdoutBuffer == null ? null : StreamCompleter<List<int>>(),
-        super.fromComponentsInternal(
-            script.name,
-            () => ScriptComponents(
-                script.stdin,
-                _stdoutBuffer == null ? script.stdout : Stream.empty(),
-                Stream.empty(),
-                script.exitCode),
-            script.kill,
-            silenceStartMessage: true) {
+    : _stdoutCompleter = _stdoutBuffer == null
+          ? null
+          : StreamCompleter<List<int>>(),
+      super.fromComponentsInternal(
+        script.name,
+        () => ScriptComponents(
+          script.stdin,
+          _stdoutBuffer == null ? script.stdout : Stream.empty(),
+          Stream.empty(),
+          script.exitCode,
+        ),
+        script.kill,
+        silenceStartMessage: true,
+      ) {
     var stdoutBuffer = _stdoutBuffer;
     if (stdoutBuffer != null) script.stdout.pipe(stdoutBuffer);
     script.stderr.pipe(_stderrBuffer);
@@ -145,15 +152,17 @@ class BufferedScript extends Script {
   /// However, unlike [done], the returned future will *not* emit an error even
   /// if the script fails.
   Future<void> release() => _releaseMemo.runOnce(() async {
-        _stdoutCompleter?.setSourceStream(_stdoutBuffer!.stream);
-        _stderrCompleter.setSourceStream(_stderrBuffer.stream);
+    _stdoutCompleter?.setSourceStream(_stdoutBuffer!.stream);
+    _stderrCompleter.setSourceStream(_stderrBuffer.stream);
 
-        var stdoutBuffer = _stdoutBuffer;
-        await Future.wait(
-            [if (stdoutBuffer != null) stdoutBuffer.done, _stderrBuffer.done]);
+    var stdoutBuffer = _stdoutBuffer;
+    await Future.wait([
+      if (stdoutBuffer != null) stdoutBuffer.done,
+      _stderrBuffer.done,
+    ]);
 
-        // Give outer stdio listeners a chance to handle the IO.
-        await Future<void>.delayed(Duration.zero);
-      });
+    // Give outer stdio listeners a chance to handle the IO.
+    await Future<void>.delayed(Duration.zero);
+  });
   final _releaseMemo = AsyncMemoizer<void>();
 }

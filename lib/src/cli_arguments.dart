@@ -74,7 +74,9 @@ class CliArguments {
       if (next == $space || next == null) {
         var glob = isGlobActive ? globBuffer?.toString() : null;
         return _Argument(
-            plainBuffer.toString(), glob == null ? null : Glob(glob));
+          plainBuffer.toString(),
+          glob == null ? null : Glob(glob),
+        );
       } else if (next == $double_quote || next == $single_quote) {
         scanner.readChar();
 
@@ -94,7 +96,8 @@ class CliArguments {
         var char = scanner.readChar();
         plainBuffer.writeCharCode(char);
         globBuffer?.writeCharCode(char);
-        isGlobActive = glob &&
+        isGlobActive =
+            glob &&
             (isGlobActive ||
                 char == $asterisk ||
                 char == $question ||
@@ -131,8 +134,9 @@ class CliArguments {
   /// If the arguments include [Glob]s, they will be resolved to concrete file
   /// paths (relative to [root], which defaults to the current directory) before
   /// being returned.
-  Future<List<String>> arguments({String? root}) async =>
-      [for (var argument in _arguments) ...await argument.resolve(root: root)];
+  Future<List<String>> arguments({String? root}) async => [
+    for (var argument in _arguments) ...await argument.resolve(root: root),
+  ];
 }
 
 /// An argument parsed from a `executableAndArgs` string.
@@ -159,7 +163,7 @@ class _Argument {
       var absolute = p.isAbsolute(glob.pattern);
       var globbed = [
         await for (var entity in glob.list(root: root))
-          absolute ? entity.path : p.relative(entity.path, from: root)
+          absolute ? entity.path : p.relative(entity.path, from: root),
       ];
       if (globbed.isNotEmpty) return globbed;
     }

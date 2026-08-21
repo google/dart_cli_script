@@ -28,56 +28,64 @@ void main() {
     group("scripts", () {
       test("started synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() => mainScript("print('howdy!');"));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(() => mainScript("print('howdy!');"));
+          }).stdout,
+          emitsDone,
+        );
       });
 
       test("started asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() =>
-                  scheduleMicrotask(() => mainScript("print('howdy!');")));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(
+              () => scheduleMicrotask(() => mainScript("print('howdy!');")),
+            );
+          }).stdout,
+          emitsDone,
+        );
       });
     });
 
     group("print", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() => print("howdy!"));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(() => print("howdy!"));
+          }).stdout,
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() => scheduleMicrotask(() => print('howdy!')));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(() => scheduleMicrotask(() => print('howdy!')));
+          }).stdout,
+          emitsDone,
+        );
       });
     });
 
     group("currentStdout", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() => currentStdout.writeln("howdy!"));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(() => currentStdout.writeln("howdy!"));
+          }).stdout,
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStdout(() =>
-                  scheduleMicrotask(() => currentStdout.writeln('howdy!')));
-            }).stdout,
-            emitsDone);
+          Script.capture((_) {
+            silenceStdout(
+              () => scheduleMicrotask(() => currentStdout.writeln('howdy!')),
+            );
+          }).stdout,
+          emitsDone,
+        );
       });
     });
   });
@@ -86,38 +94,46 @@ void main() {
     group("scripts", () {
       test("started synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStderr(() => mainScript("stderr.writeln('howdy!');"));
-            }).stderr,
-            emitsDone);
+          Script.capture((_) {
+            silenceStderr(() => mainScript("stderr.writeln('howdy!');"));
+          }).stderr,
+          emitsDone,
+        );
       });
 
       test("started asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStderr(() => scheduleMicrotask(
-                  () => mainScript("stderr.writeln('howdy!');")));
-            }).stderr,
-            emitsDone);
+          Script.capture((_) {
+            silenceStderr(
+              () => scheduleMicrotask(
+                () => mainScript("stderr.writeln('howdy!');"),
+              ),
+            );
+          }).stderr,
+          emitsDone,
+        );
       });
     });
 
     group("currentStderr", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStderr(() => currentStderr.writeln("howdy!"));
-            }).stderr,
-            emitsDone);
+          Script.capture((_) {
+            silenceStderr(() => currentStderr.writeln("howdy!"));
+          }).stderr,
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceStderr(() =>
-                  scheduleMicrotask(() => currentStderr.writeln('howdy!')));
-            }).stderr,
-            emitsDone);
+          Script.capture((_) {
+            silenceStderr(
+              () => scheduleMicrotask(() => currentStderr.writeln('howdy!')),
+            );
+          }).stderr,
+          emitsDone,
+        );
       });
     });
   });
@@ -126,80 +142,96 @@ void main() {
     group("scripts", () {
       test("started synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => mainScript("""
+          Script.capture((_) {
+            silenceOutput(
+              () => mainScript("""
                 print('howdy!');
                 stderr.writeln('howdy!');
-              """));
-            }).combineOutput(),
-            emitsDone);
+              """),
+            );
+          }).combineOutput(),
+          emitsDone,
+        );
       });
 
       test("started asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => scheduleMicrotask(() => mainScript("""
+          Script.capture((_) {
+            silenceOutput(
+              () => scheduleMicrotask(
+                () => mainScript("""
                 print('howdy!');
                 stderr.writeln('howdy!');
-              """)));
-            }).combineOutput(),
-            emitsDone);
+              """),
+              ),
+            );
+          }).combineOutput(),
+          emitsDone,
+        );
       });
     });
 
     group("print", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => print("howdy!"));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(() => print("howdy!"));
+          }).combineOutput(),
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => scheduleMicrotask(() => print('howdy!')));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(() => scheduleMicrotask(() => print('howdy!')));
+          }).combineOutput(),
+          emitsDone,
+        );
       });
     });
 
     group("currentStdout", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => currentStdout.writeln("howdy!"));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(() => currentStdout.writeln("howdy!"));
+          }).combineOutput(),
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() =>
-                  scheduleMicrotask(() => currentStdout.writeln('howdy!')));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(
+              () => scheduleMicrotask(() => currentStdout.writeln('howdy!')),
+            );
+          }).combineOutput(),
+          emitsDone,
+        );
       });
     });
 
     group("currentStderr", () {
       test("synchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() => currentStderr.writeln("howdy!"));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(() => currentStderr.writeln("howdy!"));
+          }).combineOutput(),
+          emitsDone,
+        );
       });
 
       test("asynchronously", () {
         expect(
-            Script.capture((_) {
-              silenceOutput(() =>
-                  scheduleMicrotask(() => currentStderr.writeln('howdy!')));
-            }).combineOutput(),
-            emitsDone);
+          Script.capture((_) {
+            silenceOutput(
+              () => scheduleMicrotask(() => currentStderr.writeln('howdy!')),
+            );
+          }).combineOutput(),
+          emitsDone,
+        );
       });
     });
   });
@@ -209,92 +241,109 @@ void main() {
       group("scripts", () {
         test("started synchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) => mainScript("""
+            Script.capture((_) {
+              silenceUntilFailure(
+                (_) => mainScript("""
                   print('howdy!');
                   stderr.writeln('howdy!');
-                """));
-              }).combineOutput(),
-              emitsDone);
+                """),
+              );
+            }).combineOutput(),
+            emitsDone,
+          );
         });
 
         test("started asynchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure(
-                    (_) => scheduleMicrotask(() => mainScript("""
+            Script.capture((_) {
+              silenceUntilFailure(
+                (_) => scheduleMicrotask(
+                  () => mainScript("""
                       print('howdy!');
                       stderr.writeln('howdy!');
-                    """)));
-              }).combineOutput(),
-              emitsDone);
+                    """),
+                ),
+              );
+            }).combineOutput(),
+            emitsDone,
+          );
         });
       });
 
       group("print", () {
         test("synchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) => print("howdy!"));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure((_) => print("howdy!"));
+            }).combineOutput(),
+            emitsDone,
+          );
         });
 
         test("asynchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure(
-                    (_) => scheduleMicrotask(() => print('howdy!')));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure(
+                (_) => scheduleMicrotask(() => print('howdy!')),
+              );
+            }).combineOutput(),
+            emitsDone,
+          );
         });
       });
 
       group("currentStdout", () {
         test("synchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) => currentStdout.writeln("howdy!"));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure((_) => currentStdout.writeln("howdy!"));
+            }).combineOutput(),
+            emitsDone,
+          );
         });
 
         test("asynchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) =>
-                    scheduleMicrotask(() => currentStdout.writeln('howdy!')));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure(
+                (_) => scheduleMicrotask(() => currentStdout.writeln('howdy!')),
+              );
+            }).combineOutput(),
+            emitsDone,
+          );
         });
       });
 
       group("currentStderr", () {
         test("synchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) => currentStderr.writeln("howdy!"));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure((_) => currentStderr.writeln("howdy!"));
+            }).combineOutput(),
+            emitsDone,
+          );
         });
 
         test("asynchronously", () {
           expect(
-              Script.capture((_) {
-                silenceUntilFailure((_) =>
-                    scheduleMicrotask(() => currentStderr.writeln('howdy!')));
-              }).combineOutput(),
-              emitsDone);
+            Script.capture((_) {
+              silenceUntilFailure(
+                (_) => scheduleMicrotask(() => currentStderr.writeln('howdy!')),
+              );
+            }).combineOutput(),
+            emitsDone,
+          );
         });
       });
     });
 
     test("doesn't silence stdout with stderrOnly: true", () {
       expect(
-          Script.capture((_) {
-            silenceUntilFailure((_) => print("howdy!"), stderrOnly: true);
-          }).lines,
-          emitsInOrder([emits("howdy!"), emitsDone]));
+        Script.capture((_) {
+          silenceUntilFailure((_) => print("howdy!"), stderrOnly: true);
+        }).lines,
+        emitsInOrder([emits("howdy!"), emitsDone]),
+      );
     });
 
     group("releases stdio when the callback fails", () {
@@ -326,8 +375,9 @@ void main() {
 
   test("a script cancels its stdin subscription when it exits", () async {
     var canceled = false;
-    var controller =
-        StreamController<List<int>>(onCancel: () => canceled = true);
+    var controller = StreamController<List<int>>(
+      onCancel: () => canceled = true,
+    );
     var script = Script.capture((_) => Future.delayed(Duration.zero));
     controller.stream | script;
 

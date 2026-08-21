@@ -41,8 +41,11 @@ final _defaultEnvironment = _newMap()..addAll(Platform.environment);
 /// remove the corresponding keys from the parent [env]. If
 /// [includeParentEnvironment] is `false`, [environment] is used as the *entire*
 /// child environment instead.
-T withEnv<T>(T Function() callback, Map<String, String?> environment,
-    {bool includeParentEnvironment = true}) {
+T withEnv<T>(
+  T Function() callback,
+  Map<String, String?> environment, {
+  bool includeParentEnvironment = true,
+}) {
   var newEnvironment = _newMap();
   if (includeParentEnvironment) newEnvironment.addAll(env);
 
