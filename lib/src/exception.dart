@@ -13,14 +13,14 @@
 // limitations under the License.
 
 /// An exception indicating that a [Script] failed.
-class ScriptException implements Exception {
+class ScriptException(
   /// The human-readable name of the script that failed.
-  final String scriptName;
+  final String scriptName,
 
   /// The exit code produced by the failing script.
-  final int exitCode;
-
-  new(this.scriptName, this.exitCode) {
+  final int exitCode,
+) implements Exception {
+  this {
     if (exitCode == 0) {
       throw RangeError.value(exitCode, "exitCode", "May not be 0");
     }

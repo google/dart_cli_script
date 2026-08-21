@@ -28,19 +28,19 @@ import 'util/sink_base.dart';
 /// data to stdout/stderr, as well as a [writeln] method that can be used for
 /// the same purpose but is unaffected by [sink] being closed or locked by
 /// [Sink.addStream].
-class StdioGroup {
+class StdioGroup._(
+  /// The controller for [sink].
+  final StreamController<List<int>> _sinkController,
+) {
   /// The inner stream group that handles all the heavy lifting of merging
   /// streams.
   final _group = StreamGroup<List<int>>();
 
   /// The sink for manually adding additional output.
-  final IOSink sink;
+  final IOSink sink = _StdioGroupSink(_sinkController.sink);
 
   /// See [StreamGroup.stream].
   Stream<List<int>> get stream => _group.stream;
-
-  /// The controller for [sink].
-  final StreamController<List<int>> _sinkController;
 
   static Tuple2<StdioGroup, StdioGroup> entangled() {
     var controllers = createEntangledControllers<List<int>>();
@@ -52,8 +52,7 @@ class StdioGroup {
 
   new() : this._(StreamController(sync: true));
 
-  new _(this._sinkController)
-    : sink = _StdioGroupSink(_sinkController.sink) {
+  this {
     _group.add(_sinkController.stream);
   }
 
@@ -76,11 +75,11 @@ class StdioGroup {
 
 /// A custom [IOSink] that doesn't actually close the underlying sink when it's
 /// closed.
-class _StdioGroupSink extends IOSinkBase implements IOSink {
+class _StdioGroupSink(
   /// The underlying sink.
-  final StreamSink<List<int>> _sink;
-
-  new(this._sink) {
+  final StreamSink<List<int>> _sink,
+) extends IOSinkBase implements IOSink {
+  this {
     encoding = utf8;
   }
 

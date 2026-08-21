@@ -21,13 +21,13 @@ import 'package:path/path.dart' as p;
 import 'package:string_scanner/string_scanner.dart';
 
 /// CLI arguments parsed from a `executableAndArgs` string.
-class CliArguments {
+class CliArguments._(
   /// The executable to run.
-  final String executable;
+  final String executable,
 
   /// The arguments to the executable, with globs not yet resolved.
-  final List<_Argument> _arguments;
-
+  final List<_Argument> _arguments,
+) {
   /// Parses [argString], a shell-style string of space-separated arguments,
   /// into a list of separate arguments.
   ///
@@ -56,8 +56,6 @@ class CliArguments {
 
     return CliArguments._(executable, args);
   }
-
-  new _(this.executable, this._arguments);
 
   /// Consumes zero or more spaces.
   static void _consumeSpaces(StringScanner scanner) {
@@ -140,19 +138,17 @@ class CliArguments {
 }
 
 /// An argument parsed from a `executableAndArgs` string.
-class _Argument {
+class _Argument(
   /// The plain text of the argument, to be used if globbing is disabled or if
   /// [_glob] matches no files.
-  final String _plain;
+  final String _plain,
 
   /// The glob for the argument.
   ///
   /// If this is non-`null`, the files it matches are used as the arguments in
   /// place of [_plain]. If it matches no files, [_plain] is used instead.
-  final Glob? _glob;
-
-  new(this._plain, this._glob);
-
+  final Glob? _glob,
+) {
   /// Returns the files matched by this argument's [Glob] if it has one and if
   /// it matches at least one file, or the plain argument string otherwise.
   ///

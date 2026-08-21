@@ -58,17 +58,15 @@ class _EntangledBuffer<T> {
   ///
   /// The [StreamSink] methods on this controller should not be accessed outside
   /// of [_EntangledBuffer].
-  final StreamController<T> controller1;
+  final StreamController<T> controller1 = StreamController(sync: true);
 
   /// The entangled controller that corresponds to events labeled `false`.
   ///
   /// The [StreamSink] methods on this controller should not be accessed outside
   /// of [_EntangledBuffer].
-  final StreamController<T> controller2;
+  final StreamController<T> controller2 = StreamController(sync: true);
 
-  new()
-    : controller1 = StreamController(sync: true),
-      controller2 = StreamController(sync: true) {
+  new() {
     controller1.onListen = _flush;
     controller2.onListen = _flush;
   }
@@ -159,14 +157,13 @@ class _EntangledBuffer<T> {
 
 /// A wrapper that pipes inputs to [_EntangledBuffer] and exposes output from
 /// one of [_EntangledBuffer]'s controllers.
-class _EntangledController<T> extends StreamSinkBase<T>
-    implements StreamController<T> {
+class _EntangledController<T>(
   /// The buffer that this wraps.
-  final _EntangledBuffer<T> _buffer;
+  final _EntangledBuffer<T> _buffer,
 
   /// Whether this is [_buffer.controller1] or [_buffer.controller2].
-  final bool _isController1;
-
+  final bool _isController1,
+) extends StreamSinkBase<T> implements StreamController<T> {
   StreamController<T> get _outputController =>
       _isController1 ? _buffer.controller1 : _buffer.controller2;
 
@@ -205,8 +202,6 @@ class _EntangledController<T> extends StreamSinkBase<T>
 
   @override
   StreamSink<T> get sink => this;
-
-  new(this._buffer, this._isController1);
 
   @override
   Future<void> addStream(Stream<T> stream, {bool? cancelOnError}) {

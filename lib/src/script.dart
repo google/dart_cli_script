@@ -73,10 +73,18 @@ final scriptNameKey = #_captureName;
 /// * Passing error events to [stdin] is not allowed. If an error is passed,
 ///   [stdin] wil close and forward the error to [stdin.done].
 @sealed
-class Script {
+class Script._(
   /// A human-readable name of the script.
-  final String name;
+  final String name,
+  StreamSink<List<int>> stdin,
+  Stream<List<int>> stdout,
+  Stream<List<int>> stderr,
+  Future<int> exitCode,
 
+  /// The script's signal handler to terminate the process.
+  final bool Function(ProcessSignal) _signalHandler, {
+  bool silenceStartMessage = false,
+}) {
   /// The standard input stream that's used to pass data into the process.
   late final IOSink stdin;
 
@@ -159,9 +167,6 @@ class Script {
   /// A transformer that's used to forcibly close [stdout] and [stderr] once the
   /// script exits.
   final _outputCloser = StreamCloser<List<int>>();
-
-  /// The script's signal handler to terminate the process.
-  bool Function(ProcessSignal) _signalHandler;
 
   /// Sends a [ProcessSignal] to terminate the process.
   ///
@@ -430,13 +435,11 @@ class Script {
   ///
   /// This script passes each line of stdin to [mapper] and emits the result via
   /// stdout.
-  factory mapLines(
-    String Function(String line) mapper, {
-    String? name,
-  }) => Script.fromLineTransformer(
-    StreamTransformer.fromBind((stream) => stream.map(mapper)),
-    name: name ?? mapper.toString(),
-  );
+  factory mapLines(String Function(String line) mapper, {String? name}) =>
+      Script.fromLineTransformer(
+        StreamTransformer.fromBind((stream) => stream.map(mapper)),
+        name: name ?? mapper.toString(),
+      );
 
   /// Pipes each script's [stdout] into the next script's [stdin].
   ///
@@ -612,15 +615,7 @@ class Script {
   ///
   /// If [silenceStartMessage] is `false` (the default), this prints a message
   /// in debug mode indicating that the script has started running.
-  new _(
-    this.name,
-    StreamSink<List<int>> stdin,
-    Stream<List<int>> stdout,
-    Stream<List<int>> stderr,
-    Future<int> exitCode,
-    this._signalHandler, {
-    bool silenceStartMessage = false,
-  }) {
+  this {
     this.stdin = IOSink(
       stdin.transform(
         StreamSinkTransformer.fromStreamTransformer(_stdinCloser),
@@ -821,18 +816,16 @@ class Script {
 
 /// A struct containing the components needed to create a [Script].
 @sealed
-class ScriptComponents {
+class ScriptComponents(
   /// The standard input sink.
-  final StreamSink<List<int>> stdin;
+  final StreamSink<List<int>> stdin,
 
   /// The standard output stream.
-  final Stream<List<int>> stdout;
+  final Stream<List<int>> stdout,
 
   /// The standard error stream.
-  final Stream<List<int>> stderr;
+  final Stream<List<int>> stderr,
 
   /// The script's exit code, to complete once it exits.
-  final Future<int> exitCode;
-
-  new(this.stdin, this.stdout, this.stderr, this.exitCode);
-}
+  final Future<int> exitCode,
+);
