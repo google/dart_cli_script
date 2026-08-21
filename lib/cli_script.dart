@@ -407,7 +407,7 @@ IOSink write(String path) => File(path).openWrite();
 ///   });
 /// }
 /// ```
-IOSink append(String path) => File(path).openWrite(mode: FileMode.append);
+IOSink append(String path) => File(path).openWrite(mode: .append);
 
 /// Executes [callback] with arguments from standard input.
 ///

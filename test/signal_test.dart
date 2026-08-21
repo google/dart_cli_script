@@ -28,7 +28,7 @@ void main() {
       var script = mainScript('while (true) {}');
       await pumpEventQueue();
 
-      expect(script.kill(ProcessSignal.sigint), true);
+      expect(script.kill(.sigint), true);
       expect(script.done, throwsScriptException(-2));
     });
 

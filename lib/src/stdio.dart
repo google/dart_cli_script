@@ -135,7 +135,7 @@ Script silenceUntilFailure(
         script.release();
 
         // Give the new stdio a chance to propagate.
-        await Future<void>.delayed(Duration.zero);
+        await Future.pause(.zero);
         rethrow;
       }
     },

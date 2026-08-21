@@ -378,7 +378,7 @@ void main() {
     var controller = StreamController<List<int>>(
       onCancel: () => canceled = true,
     );
-    var script = Script.capture((_) => Future.delayed(Duration.zero));
+    var script = Script.capture((_) => Future.pause(.zero));
     controller.stream | script;
 
     await script.done;

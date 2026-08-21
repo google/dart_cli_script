@@ -177,7 +177,7 @@ class Script._(
   /// Returns `true` if the signal is successfully delivered to the [Script].
   /// Otherwise the signal could not be sent, usually meaning that the process
   /// is already dead or the [Script] doesn't have a signal handler.
-  bool kill([ProcessSignal signal = ProcessSignal.sigterm]) {
+  bool kill([ProcessSignal signal = .sigterm]) {
     if (_doneCompleter.isCompleted) return false;
     try {
       return _signalHandler(signal);
@@ -641,10 +641,7 @@ class Script._(
         _doneCompleter.complete(null);
       } else {
         debug("[$name] exited with exit code $code");
-        _doneCompleter.completeError(
-          ScriptException(name, code),
-          StackTrace.current,
-        );
+        _doneCompleter.completeError(ScriptException(name, code), .current);
       }
 
       _closeOutputStreams();
@@ -744,10 +741,7 @@ class Script._(
         ),
       );
       _extraStderrController.close();
-      _doneCompleter.completeError(
-        ScriptException(name, 257),
-        StackTrace.current,
-      );
+      _doneCompleter.completeError(ScriptException(name, 257), .current);
     }
 
     _closeOutputStreams();

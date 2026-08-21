@@ -163,7 +163,7 @@ class BufferedScript._(
     ]);
 
     // Give outer stdio listeners a chance to handle the IO.
-    await Future<void>.delayed(Duration.zero);
+    await Future.pause(.zero);
   });
   final _releaseMemo = AsyncMemoizer<void>();
 }
