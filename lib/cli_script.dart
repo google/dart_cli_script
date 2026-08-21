@@ -243,7 +243,7 @@ Never fail(String message, {int exitCode = 1}) {
 /// at the same time as [exclude].
 ///
 /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-/// [new RegExp].
+/// [RegExp.new].
 StreamTransformer<String, String> grep(
   String regexp, {
   bool exclude = false,
@@ -279,7 +279,7 @@ StreamTransformer<String, String> grep(
 /// followed by a number return the character immediately following them.
 ///
 /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-/// [new RegExp].
+/// [RegExp.new].
 StreamTransformer<String, String> replace(
   String regexp,
   String replacement, {
@@ -306,7 +306,7 @@ StreamTransformer<String, String> replace(
 /// replaces all matches in each line instead.
 ///
 /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-/// [new RegExp].
+/// [RegExp.new].
 StreamTransformer<String, String> replaceMapped(
   String regexp,
   String Function(Match match) replace, {

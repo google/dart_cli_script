@@ -33,12 +33,12 @@ void main() {
       test("when listened in the same microtask", () {
         controller1.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
         controller2.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
       });
@@ -46,13 +46,13 @@ void main() {
       test("when listened in separate microtasks", () async {
         controller1.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
         await Future<void>.value();
         controller2.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
       });
@@ -60,13 +60,13 @@ void main() {
       test("when listened in distant microtasks", () async {
         controller1.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
         await pumpEventQueue();
         controller2.stream.listen(
           expectAsync1((_) {}, count: 0),
-          onError: expectAsync2((_, __) {}, count: 0),
+          onError: expectAsync2((_, _) {}, count: 0),
           onDone: expectAsync0(() {}, count: 0),
         );
       });

@@ -41,10 +41,10 @@ class DelayedCompleter<T> implements Completer<T> {
   @override
   Future<T> get future => _inner.future;
 
-  DelayedCompleter() : _inner = Completer<T>();
+  new() : _inner = Completer<T>();
 
   /// Like [Completer.sync].
-  DelayedCompleter.sync() : _inner = Completer<T>.sync();
+  new sync() : _inner = Completer<T>.sync();
 
   @override
   void complete([FutureOr<T>? value]) {

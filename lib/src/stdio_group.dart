@@ -50,9 +50,9 @@ class StdioGroup {
     );
   }
 
-  StdioGroup() : this._(StreamController(sync: true));
+  new() : this._(StreamController(sync: true));
 
-  StdioGroup._(this._sinkController)
+  new _(this._sinkController)
     : sink = _StdioGroupSink(_sinkController.sink) {
     _group.add(_sinkController.stream);
   }
@@ -80,7 +80,7 @@ class _StdioGroupSink extends IOSinkBase implements IOSink {
   /// The underlying sink.
   final StreamSink<List<int>> _sink;
 
-  _StdioGroupSink(this._sink) {
+  new(this._sink) {
     encoding = utf8;
   }
 

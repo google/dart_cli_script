@@ -18,7 +18,7 @@ import 'dart:async';
 class FakeStreamConsumer<T> implements StreamConsumer<T> {
   final Future<void> Function(Stream<T> stream) _implementation;
 
-  FakeStreamConsumer(this._implementation);
+  new(this._implementation);
 
   @override
   Future<void> addStream(Stream<T> stream) => _implementation(stream);

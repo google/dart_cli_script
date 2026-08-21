@@ -66,7 +66,7 @@ class _EntangledBuffer<T> {
   /// of [_EntangledBuffer].
   final StreamController<T> controller2;
 
-  _EntangledBuffer()
+  new()
     : controller1 = StreamController(sync: true),
       controller2 = StreamController(sync: true) {
     controller1.onListen = _flush;
@@ -206,7 +206,7 @@ class _EntangledController<T> extends StreamSinkBase<T>
   @override
   StreamSink<T> get sink => this;
 
-  _EntangledController(this._buffer, this._isController1);
+  new(this._buffer, this._isController1);
 
   @override
   Future<void> addStream(Stream<T> stream, {bool? cancelOnError}) {

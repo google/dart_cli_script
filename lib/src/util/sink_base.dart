@@ -123,7 +123,7 @@ abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
   @override
   Encoding encoding;
 
-  IOSinkBase([this.encoding = utf8]);
+  new([this.encoding = utf8]);
 
   /// See [IOSink.flush] from `dart:io`.
   ///

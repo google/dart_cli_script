@@ -99,7 +99,7 @@ extension LineStreamExtensions on Stream<String> {
   /// `true` at the same time as [exclude].
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
+  /// [RegExp.new].
   Stream<String> grep(
     String regexp, {
     bool exclude = false,
@@ -141,7 +141,7 @@ extension LineStreamExtensions on Stream<String> {
   /// followed by a number return the character immediately following them.
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
+  /// [RegExp.new].
   Stream<String> replace(
     String regexp,
     String replacement, {
@@ -164,7 +164,7 @@ extension LineStreamExtensions on Stream<String> {
   /// replaces all matches in each line instead.
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
+  /// [RegExp.new].
   Stream<String> replaceMapped(
     String regexp,
     String Function(Match match) replace, {

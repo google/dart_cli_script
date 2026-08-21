@@ -41,7 +41,7 @@ final scriptNameKey = #_captureName;
 /// [stderr] streams that ultimately produces an [exitCode] indicating success
 /// or failure.
 ///
-/// This is usually a literal subprocess (created using [new Script]). However,
+/// This is usually a literal subprocess (created using [Script.new]). However,
 /// it can also be a block of Dart code (created using [Script.capture]) or a
 /// user-defined custom script (created using [Script.fromComponents]).
 ///
@@ -190,7 +190,7 @@ class Script {
   /// executable name. All other arguments are forwarded to [Process.start].
   ///
   /// [the README]: https://github.com/google/dart_cli_script/blob/main/README.md#argument-parsing
-  factory Script(
+  factory(
     String executableAndArgs, {
     Iterable<String>? args,
     String? name,
@@ -298,7 +298,7 @@ class Script {
   /// callback allows capturing those signals so the callback may react
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
-  factory Script.capture(
+  factory capture(
     FutureOr<void> Function(Stream<List<int>> stdin) callback, {
     String? name,
     bool Function(ProcessSignal signal)? onSignal,
@@ -378,7 +378,7 @@ class Script {
   /// [Script.kill] returns `true` if the stream was interrupted and the script
   /// exits with [Script.exitCode] `143`, or `false` if the stream was already
   /// closed.
-  factory Script.fromByteTransformer(
+  factory fromByteTransformer(
     StreamTransformer<List<int>, List<int>> transformer, {
     String? name,
   }) {
@@ -414,7 +414,7 @@ class Script {
   /// [Script.kill] returns `true` if the stream was interrupted and the script
   /// exits with [Script.exitCode] `143`, or `false` if the stream was already
   /// closed.
-  factory Script.fromLineTransformer(
+  factory fromLineTransformer(
     StreamTransformer<String, String> transformer, {
     String? name,
   }) => Script.fromByteTransformer(
@@ -430,7 +430,7 @@ class Script {
   ///
   /// This script passes each line of stdin to [mapper] and emits the result via
   /// stdout.
-  factory Script.mapLines(
+  factory mapLines(
     String Function(String line) mapper, {
     String? name,
   }) => Script.fromLineTransformer(
@@ -460,7 +460,7 @@ class Script {
   ///
   /// See also [operator |], which provides a syntax for creating pipelines two
   /// scripts at a time.
-  factory Script.pipeline(Iterable<Object> scripts, {String? name}) {
+  factory pipeline(Iterable<Object> scripts, {String? name}) {
     _checkCapture();
 
     var list = scripts.map(_toScript).toList();
@@ -528,7 +528,7 @@ class Script {
   /// callback allows capturing those signals so the callback may react
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
-  Script.fromComponents(
+  new fromComponents(
     String name,
     FutureOr<ScriptComponents> Function() callback, {
     bool Function(ProcessSignal signal)? onSignal,
@@ -544,7 +544,7 @@ class Script {
   ///
   /// @nodoc
   @internal
-  Script.fromComponentsInternal(
+  new fromComponentsInternal(
     String name,
     FutureOr<ScriptComponents> Function() callback,
     bool Function(ProcessSignal signal) signalHandler, {
@@ -567,7 +567,7 @@ class Script {
   /// It would be much cleaner to just make [Script.fromComponentsInternal] a
   /// factory constructor, but then it and [Script.fromComponents] couldn't be
   /// invoked by  subclasses.
-  Script._fromComponentsInternal(
+  new _fromComponentsInternal(
     // A void parameter is pretty nasty, but it allows us to throw an error if
     // the surrounding capture is closed before scheduling [callback].
     void checkCapture,
@@ -612,7 +612,7 @@ class Script {
   ///
   /// If [silenceStartMessage] is `false` (the default), this prints a message
   /// in debug mode indicating that the script has started running.
-  Script._(
+  new _(
     this.name,
     StreamSink<List<int>> stdin,
     Stream<List<int>> stdout,
@@ -834,5 +834,5 @@ class ScriptComponents {
   /// The script's exit code, to complete once it exits.
   final Future<int> exitCode;
 
-  ScriptComponents(this.stdin, this.stdout, this.stderr, this.exitCode);
+  new(this.stdin, this.stdout, this.stderr, this.exitCode);
 }

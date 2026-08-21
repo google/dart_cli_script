@@ -97,7 +97,7 @@ class BufferedScript extends Script {
   /// callback allows capturing those signals so the callback may react
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
-  factory BufferedScript.capture(
+  factory capture(
     FutureOr<void> Function(Stream<List<int>> stdin) callback, {
     String? name,
     bool Function(ProcessSignal signal)? onSignal,
@@ -120,7 +120,7 @@ class BufferedScript extends Script {
   /// A helper constructor that allows [BufferedScript.capture] to pass in both
   /// [_stdoutBuffer] and [_stderrBuffer] from a single call to
   /// [createEntangledControllers].
-  BufferedScript._(Script script, this._stdoutBuffer, this._stderrBuffer)
+  new _(Script script, this._stdoutBuffer, this._stderrBuffer)
     : _stdoutCompleter = _stdoutBuffer == null
           ? null
           : StreamCompleter<List<int>>(),

@@ -37,7 +37,7 @@ class CliArguments {
   /// handle its own glob expansion.
   ///
   /// Throws a [FormatException] if [argString] is malformed.
-  factory CliArguments.parse(String argString, {bool? glob}) {
+  factory parse(String argString, {bool? glob}) {
     glob ??= !Platform.isWindows;
 
     var scanner = StringScanner(argString);
@@ -57,7 +57,7 @@ class CliArguments {
     return CliArguments._(executable, args);
   }
 
-  CliArguments._(this.executable, this._arguments);
+  new _(this.executable, this._arguments);
 
   /// Consumes zero or more spaces.
   static void _consumeSpaces(StringScanner scanner) {
@@ -151,7 +151,7 @@ class _Argument {
   /// place of [_plain]. If it matches no files, [_plain] is used instead.
   final Glob? _glob;
 
-  _Argument(this._plain, this._glob);
+  new(this._plain, this._glob);
 
   /// Returns the files matched by this argument's [Glob] if it has one and if
   /// it matches at least one file, or the plain argument string otherwise.
@@ -172,7 +172,7 @@ class _Argument {
 }
 
 /// Converts [argument] to a string and escapes it so it's parsed as a single
-/// argument with no glob expansion by [new Script] and related functions.
+/// argument with no glob expansion by [Script] and related functions.
 ///
 /// For example, `run("cp -r ${arg(source)} build/")`.
 String arg(Object argument) {
@@ -203,8 +203,8 @@ String arg(Object argument) {
 }
 
 /// Converts all elements of [arguments] to strings and escapes them so they're
-/// parsed as separate arguments with no glob expansion by [new Script] and
-/// related functions.
+/// parsed as separate arguments with no glob expansion by [Script] and related
+/// functions.
 ///
 /// For example, `run("cp -r ${args(directories)} build/")`.
 String args(Iterable<Object> arguments) => arguments.map(arg).join(" ");

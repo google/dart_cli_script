@@ -62,7 +62,7 @@ T silenceStdout<T>(T Function() callback) {
   return runZoned(
     callback,
     zoneValues: {stdoutKey: group},
-    zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}),
+    zoneSpecification: ZoneSpecification(print: (_, _, _, _) {}),
   );
 }
 
@@ -87,7 +87,7 @@ T silenceOutput<T>(T Function() callback) {
   return runZoned(
     callback,
     zoneValues: {stdoutKey: group, stderrKey: group},
-    zoneSpecification: ZoneSpecification(print: (_, __, ___, ____) {}),
+    zoneSpecification: ZoneSpecification(print: (_, _, _, _) {}),
   );
 }
 

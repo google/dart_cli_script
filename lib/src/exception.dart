@@ -20,7 +20,7 @@ class ScriptException implements Exception {
   /// The exit code produced by the failing script.
   final int exitCode;
 
-  ScriptException(this.scriptName, this.exitCode) {
+  new(this.scriptName, this.exitCode) {
     if (exitCode == 0) {
       throw RangeError.value(exitCode, "exitCode", "May not be 0");
     }
