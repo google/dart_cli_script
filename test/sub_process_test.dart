@@ -58,11 +58,12 @@ void main() {
     var script = Script("non-existent-executable");
     expect(script.exitCode, completion(equals(257)));
     expect(
-        script.stderr.lines,
-        emitsInOrder([
-          "Error in non-existent-executable:",
-          "ProcessException: No such file or directory"
-        ]));
+      script.stderr.lines,
+      emitsInOrder([
+        "Error in non-existent-executable:",
+        "ProcessException: No such file or directory",
+      ]),
+    );
   });
 
   group("stdin", () {
@@ -90,45 +91,57 @@ void main() {
     // [Stream.listen] until the file is actually open.
     test("that waits to listen", () async {
       await (mainScript("print('hello!');") >
-          FakeStreamConsumer(expectAsync1((stream) async {
-            await pumpEventQueue();
-            expect(stream.lines, emits("hello!"));
-          })));
+          FakeStreamConsumer(
+            expectAsync1((stream) async {
+              await pumpEventQueue();
+              expect(stream.lines, emits("hello!"));
+            }),
+          ));
     });
   });
 
   group("subprocess environment", () {
     test("defaults to the parent environment", () {
-      expect(_getSubprocessEnvironment(),
-          completion(equals(Platform.environment)));
+      expect(
+        _getSubprocessEnvironment(),
+        completion(equals(Platform.environment)),
+      );
     });
 
     test("includes modifications to env", () {
       var varName = uid();
       env[varName] = "value";
-      expect(_getSubprocessEnvironment(),
-          completion(containsPair(varName, "value")));
+      expect(
+        _getSubprocessEnvironment(),
+        completion(containsPair(varName, "value")),
+      );
     });
 
     test("includes scoped modifications to env", () {
       var varName = uid();
       withEnv(() {
-        expect(_getSubprocessEnvironment(),
-            completion(containsPair(varName, "value")));
+        expect(
+          _getSubprocessEnvironment(),
+          completion(containsPair(varName, "value")),
+        );
       }, {varName: "value"});
     });
 
     test("includes values from the environment parameter", () {
       var varName = uid();
-      expect(_getSubprocessEnvironment(environment: {varName: "value"}),
-          completion(containsPair(varName, "value")));
+      expect(
+        _getSubprocessEnvironment(environment: {varName: "value"}),
+        completion(containsPair(varName, "value")),
+      );
     });
 
     test("the environment parameter overrides env", () {
       var varName = uid();
       env[varName] = "outer value";
-      expect(_getSubprocessEnvironment(environment: {varName: "inner value"}),
-          completion(containsPair(varName, "inner value")));
+      expect(
+        _getSubprocessEnvironment(environment: {varName: "inner value"}),
+        completion(containsPair(varName, "inner value")),
+      );
     });
 
     group("with includeParentEnvironment: false", () {
@@ -139,17 +152,21 @@ void main() {
       test("ignores env", () {
         var varName = uid();
         env[varName] = "value";
-        expect(_getSubprocessEnvironment(includeParentEnvironment: false),
-            completion(isNot(contains(varName))));
+        expect(
+          _getSubprocessEnvironment(includeParentEnvironment: false),
+          completion(isNot(contains(varName))),
+        );
       });
 
       test("uses the environment parameter", () {
         var varName = uid();
         expect(
-            _getSubprocessEnvironment(
-                environment: {varName: "value"},
-                includeParentEnvironment: false),
-            completion(containsPair(varName, "value")));
+          _getSubprocessEnvironment(
+            environment: {varName: "value"},
+            includeParentEnvironment: false,
+          ),
+          completion(containsPair(varName, "value")),
+        );
       });
     });
   });
@@ -157,47 +174,63 @@ void main() {
   group("output", () {
     test("returns the script's output without a trailing newline", () {
       expect(
-          mainScript("print('hello!');").output, completion(equals("hello!")));
+        mainScript("print('hello!');").output,
+        completion(equals("hello!")),
+      );
     });
 
     test("completes with a ScriptException if the script fails", () {
-      expect(mainScript("print('hello!'); exitCode = 12;").output,
-          throwsScriptException(12));
+      expect(
+        mainScript("print('hello!'); exitCode = 12;").output,
+        throwsScriptException(12),
+      );
     });
   });
 
   group("outputBytes", () {
     test("returns the script's output as bytes", () {
-      expect(mainScript("print('hello!');").outputBytes,
-          completion(equals(utf8.encode("hello!\n"))));
+      expect(
+        mainScript("print('hello!');").outputBytes,
+        completion(equals(utf8.encode("hello!\n"))),
+      );
     });
 
     test("completes with a ScriptException if the script fails", () {
-      expect(mainScript("print('hello!'); exitCode = 12;").outputBytes,
-          throwsScriptException(12));
+      expect(
+        mainScript("print('hello!'); exitCode = 12;").outputBytes,
+        throwsScriptException(12),
+      );
     });
   });
 
   group("lines", () {
     test("returns the script's stdout lines", () {
-      expect(mainScript(r"print('hello\nthere!');").lines,
-          emitsInOrder(["hello", "there!", emitsDone]));
+      expect(
+        mainScript(r"print('hello\nthere!');").lines,
+        emitsInOrder(["hello", "there!", emitsDone]),
+      );
     });
 
     test("emits a ScriptException if the script fails", () {
-      expect(mainScript("print('hello!'); exitCode = 12;").lines,
-          emitsThrough(emitsError(isScriptException(12))));
+      expect(
+        mainScript("print('hello!'); exitCode = 12;").lines,
+        emitsThrough(emitsError(isScriptException(12))),
+      );
     });
   });
 }
 
 /// Defines tests for either stdout or for stderr.
 void stdoutOrStderr(
-    String name, Stream<List<int>> Function(Script script) stream) {
+  String name,
+  Stream<List<int>> Function(Script script) stream,
+) {
   group(name, () {
     test("forwards $name from the subprocess and closes", () {
-      expect(stream(mainScript("$name.writeln('Hello!');")).lines,
-          emitsInOrder(["Hello!", emitsDone]));
+      expect(
+        stream(mainScript("$name.writeln('Hello!');")).lines,
+        emitsInOrder(["Hello!", emitsDone]),
+      );
     });
 
     test("closes after emitting nothing", () {
@@ -217,8 +250,10 @@ void stdoutOrStderr(
     test("emits non-text values", () {
       // Try emitting null bytes and invalid UTF8 sequences to make sure
       // nothing's forcing this to be interpreted as text.
-      expect(stream(mainScript("$name.add([0, 0, 0xC3, 0x28]);")),
-          emits([0, 0, 0xC3, 0x28]));
+      expect(
+        stream(mainScript("$name.add([0, 0, 0xC3, 0x28]);")),
+        emits([0, 0, 0xC3, 0x28]),
+      );
     });
 
     test("can't be listened after a macrotask has elapsed", () async {
@@ -228,21 +263,23 @@ void stdoutOrStderr(
 
       // We can't use expect(..., throwsStateError) here bceause of
       // dart-lang/sdk#45815.
-      runZonedGuarded(() => stream(script).listen(null),
-          expectAsync2((error, stackTrace) => expect(error, isStateError)));
+      runZonedGuarded(
+        () => stream(script).listen(null),
+        expectAsync2((error, stackTrace) => expect(error, isStateError)),
+      );
     });
   });
 }
 
 /// Runs a Dart subprocess and returns the value of `Process.environment` in
 /// that subprocess.
-Future<Map<String, String>> _getSubprocessEnvironment(
-        {Map<String, String>? environment,
-        bool includeParentEnvironment = true}) async =>
-    (json.decode(await mainScript(
-                "stdout.writeln(json.encode(Platform.environment));",
-                environment: environment,
-                includeParentEnvironment: includeParentEnvironment)
-            .stdout
-            .text) as Map)
-        .cast<String, String>();
+Future<Map<String, String>> _getSubprocessEnvironment({
+  Map<String, String>? environment,
+  bool includeParentEnvironment = true,
+}) async => (json.decode(
+  await mainScript(
+    "stdout.writeln(json.encode(Platform.environment));",
+    environment: environment,
+    includeParentEnvironment: includeParentEnvironment,
+  ).stdout.text,
+) as Map).cast<String, String>();

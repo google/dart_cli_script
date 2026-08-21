@@ -39,7 +39,26 @@ import 'util/entangled_controllers.dart';
 /// [BufferedScript] and only [release] them once they're the only script
 /// running, or only if they fail.
 @sealed
-class BufferedScript extends Script {
+class BufferedScript._(
+  Script script,
+
+  /// A buffer of the inner script's stdout.
+  ///
+  /// We need to buffer this ourselves rather than relying on the inner script's
+  /// buffer because once the inner [Script.done] completes, its stdio streams
+  /// will emit done events rather than replaying their buffers.
+  ///
+  /// This is null if this script is in stderr-only mode and stdout should be
+  /// forwarded as normal.
+  final StreamController<List<int>>? _stdoutBuffer,
+
+  /// A buffer of the inner script's stderr.
+  ///
+  /// We need to buffer this ourselves rather than relying on the inner script's
+  /// buffer because once the inner [Script.done] completes, its stdio streams
+  /// will emit done events rather than replaying their buffers.
+  final StreamController<List<int>> _stderrBuffer,
+) extends Script {
   @override
   Stream<List<int>> get stdout {
     var stdoutCompleter = _stdoutCompleter;
@@ -57,17 +76,9 @@ class BufferedScript extends Script {
   ///
   /// This is null if this script is in stderr-only mode and stdout should be
   /// forwarded as normal.
-  final StreamCompleter<List<int>>? _stdoutCompleter;
-
-  /// A buffer of the inner script's stdout.
-  ///
-  /// We need to buffer this ourselves rather than relying on the inner script's
-  /// buffer because once the inner [Script.done] completes, its stdio streams
-  /// will emit done events rather than replaying their buffers.
-  ///
-  /// This is null if this script is in stderr-only mode and stdout should be
-  /// forwarded as normal.
-  final StreamController<List<int>>? _stdoutBuffer;
+  final StreamCompleter<List<int>>? _stdoutCompleter = _stdoutBuffer == null
+      ? null
+      : StreamCompleter<List<int>>();
 
   @override
   Stream<List<int>> get stderr {
@@ -80,13 +91,6 @@ class BufferedScript extends Script {
   /// The completer that forwards [_stderrBuffer] once [release] is called.
   final _stderrCompleter = StreamCompleter<List<int>>();
 
-  /// A buffer of the inner script's stderr.
-  ///
-  /// We need to buffer this ourselves rather than relying on the inner script's
-  /// buffer because once the inner [Script.done] completes, its stdio streams
-  /// will emit done events rather than replaying their buffers.
-  final StreamController<List<int>> _stderrBuffer;
-
   /// Like [Script.capture], but all output is silently buffered until [release]
   /// is called.
   ///
@@ -97,13 +101,17 @@ class BufferedScript extends Script {
   /// callback allows capturing those signals so the callback may react
   /// appropriately. When no [onSignal] handler was set, calling [kill] will do
   /// nothing and return `false`.
-  factory BufferedScript.capture(
-      FutureOr<void> Function(Stream<List<int>> stdin) callback,
-      {String? name,
-      bool Function(ProcessSignal signal)? onSignal,
-      bool stderrOnly = false}) {
-    var inner = Script.capture(callback,
-        name: name ?? "BufferedScript.capture", onSignal: onSignal);
+  factory capture(
+    FutureOr<void> Function(Stream<List<int>> stdin) callback, {
+    String? name,
+    bool Function(ProcessSignal signal)? onSignal,
+    bool stderrOnly = false,
+  }) {
+    var inner = Script.capture(
+      callback,
+      name: name ?? "BufferedScript.capture",
+      onSignal: onSignal,
+    );
 
     if (stderrOnly) {
       return BufferedScript._(inner, null, StreamController<List<int>>());
@@ -116,18 +124,18 @@ class BufferedScript extends Script {
   /// A helper constructor that allows [BufferedScript.capture] to pass in both
   /// [_stdoutBuffer] and [_stderrBuffer] from a single call to
   /// [createEntangledControllers].
-  BufferedScript._(Script script, this._stdoutBuffer, this._stderrBuffer)
-      : _stdoutCompleter =
-            _stdoutBuffer == null ? null : StreamCompleter<List<int>>(),
-        super.fromComponentsInternal(
-            script.name,
-            () => ScriptComponents(
-                script.stdin,
-                _stdoutBuffer == null ? script.stdout : Stream.empty(),
-                Stream.empty(),
-                script.exitCode),
-            script.kill,
-            silenceStartMessage: true) {
+  this
+    : super.fromComponentsInternal(
+        script.name,
+        () => ScriptComponents(
+          script.stdin,
+          _stdoutBuffer == null ? script.stdout : Stream.empty(),
+          Stream.empty(),
+          script.exitCode,
+        ),
+        script.kill,
+        silenceStartMessage: true,
+      ) {
     var stdoutBuffer = _stdoutBuffer;
     if (stdoutBuffer != null) script.stdout.pipe(stdoutBuffer);
     script.stderr.pipe(_stderrBuffer);
@@ -145,15 +153,17 @@ class BufferedScript extends Script {
   /// However, unlike [done], the returned future will *not* emit an error even
   /// if the script fails.
   Future<void> release() => _releaseMemo.runOnce(() async {
-        _stdoutCompleter?.setSourceStream(_stdoutBuffer!.stream);
-        _stderrCompleter.setSourceStream(_stderrBuffer.stream);
+    _stdoutCompleter?.setSourceStream(_stdoutBuffer!.stream);
+    _stderrCompleter.setSourceStream(_stderrBuffer.stream);
 
-        var stdoutBuffer = _stdoutBuffer;
-        await Future.wait(
-            [if (stdoutBuffer != null) stdoutBuffer.done, _stderrBuffer.done]);
+    var stdoutBuffer = _stdoutBuffer;
+    await Future.wait([
+      if (stdoutBuffer != null) stdoutBuffer.done,
+      _stderrBuffer.done,
+    ]);
 
-        // Give outer stdio listeners a chance to handle the IO.
-        await Future<void>.delayed(Duration.zero);
-      });
+    // Give outer stdio listeners a chance to handle the IO.
+    await Future.pause(.zero);
+  });
   final _releaseMemo = AsyncMemoizer<void>();
 }

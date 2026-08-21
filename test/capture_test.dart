@@ -25,161 +25,167 @@ import 'util.dart';
 void main() {
   test("forwards stdout from child processes", () {
     expect(
-        Script.capture((_) async {
-          await mainScript("print('child 1');").done;
-          await mainScript("print('child 2');").done;
-          await mainScript("print('child 3');").done;
-        }).stdout.lines,
-        emitsInOrder(["child 1", "child 2", "child 3"]));
+      Script.capture((_) async {
+        await mainScript("print('child 1');").done;
+        await mainScript("print('child 2');").done;
+        await mainScript("print('child 3');").done;
+      }).stdout.lines,
+      emitsInOrder(["child 1", "child 2", "child 3"]),
+    );
   });
 
   test("forwards stderr from child processes", () {
     expect(
-        Script.capture((_) async {
-          await mainScript("stderr.writeln('child 1');").done;
-          await mainScript("stderr.writeln('child 2');").done;
-          await mainScript("stderr.writeln('child 3');").done;
-        }).stderr.lines,
-        emitsInOrder(["child 1", "child 2", "child 3"]));
+      Script.capture((_) async {
+        await mainScript("stderr.writeln('child 1');").done;
+        await mainScript("stderr.writeln('child 2');").done;
+        await mainScript("stderr.writeln('child 3');").done;
+      }).stderr.lines,
+      emitsInOrder(["child 1", "child 2", "child 3"]),
+    );
   });
 
   test("forwards prints as stdout", () {
     expect(
-        Script.capture((_) async {
-          await mainScript("print('child 1');").done;
-          print("print 1");
-          await mainScript("print('child 2');").done;
-          print("print 2");
-        }).stdout.lines,
-        emitsInOrder([
-          "child 1",
-          "print 1",
-          "child 2",
-          "print 2",
-        ]));
+      Script.capture((_) async {
+        await mainScript("print('child 1');").done;
+        print("print 1");
+        await mainScript("print('child 2');").done;
+        print("print 2");
+      }).stdout.lines,
+      emitsInOrder(["child 1", "print 1", "child 2", "print 2"]),
+    );
   });
 
   test("forwards prints even if the capture closes synchronously", () {
     expect(
-        Script.capture((_) async {
-          print("print");
-        }).stdout.lines,
-        emitsInOrder(["print", emitsDone]));
+      Script.capture((_) async {
+        print("print");
+      }).stdout.lines,
+      emitsInOrder(["print", emitsDone]),
+    );
   });
 
   test("forwards prints even if currentStdout is closed", () {
     expect(
-        Script.capture((_) async {
-          currentStdout.close();
-          print("print");
-        }).stdout.lines,
-        emitsInOrder(["print", emitsDone]));
+      Script.capture((_) async {
+        currentStdout.close();
+        print("print");
+      }).stdout.lines,
+      emitsInOrder(["print", emitsDone]),
+    );
   });
 
   test("forwards writes to currentStdout as stdout", () {
     expect(
-        Script.capture((_) async {
-          await mainScript("print('child 1');").done;
-          currentStdout.writeln("print 1");
-          await mainScript("print('child 2');").done;
-          currentStdout.writeln("print 2");
-        }).stdout.lines,
-        emitsInOrder([
-          "child 1",
-          "print 1",
-          "child 2",
-          "print 2",
-        ]));
+      Script.capture((_) async {
+        await mainScript("print('child 1');").done;
+        currentStdout.writeln("print 1");
+        await mainScript("print('child 2');").done;
+        currentStdout.writeln("print 2");
+      }).stdout.lines,
+      emitsInOrder(["child 1", "print 1", "child 2", "print 2"]),
+    );
   });
 
   test("forwards writes to currentStderr as stderr", () {
     expect(
-        Script.capture((_) async {
-          await mainScript("stderr.writeln('child 1');").done;
-          currentStderr.writeln("print 1");
-          await mainScript("stderr.writeln('child 2');").done;
-          currentStderr.writeln("print 2");
-        }).stderr.lines,
-        emitsInOrder([
-          "child 1",
-          "print 1",
-          "child 2",
-          "print 2",
-        ]));
+      Script.capture((_) async {
+        await mainScript("stderr.writeln('child 1');").done;
+        currentStderr.writeln("print 1");
+        await mainScript("stderr.writeln('child 2');").done;
+        currentStderr.writeln("print 2");
+      }).stderr.lines,
+      emitsInOrder(["child 1", "print 1", "child 2", "print 2"]),
+    );
   });
 
   group("interleaves prints and currentStdout", () {
     test("synchronously", () {
       expect(
-          Script.capture((_) {
-            currentStdout.writeln("stdout 1");
-            print("stdout 2");
-            currentStdout.writeln("stdout 3");
-            print("stdout 4");
-            currentStdout.writeln("stdout 5");
-          }).combineOutput().lines,
-          emitsInOrder(
-              ["stdout 1", "stdout 2", "stdout 3", "stdout 4", "stdout 5"]));
+        Script.capture((_) {
+          currentStdout.writeln("stdout 1");
+          print("stdout 2");
+          currentStdout.writeln("stdout 3");
+          print("stdout 4");
+          currentStdout.writeln("stdout 5");
+        }).combineOutput().lines,
+        emitsInOrder([
+          "stdout 1",
+          "stdout 2",
+          "stdout 3",
+          "stdout 4",
+          "stdout 5",
+        ]),
+      );
     });
     test("asynchronously", () {
       expect(
-          Script.capture((_) async {
-            await pumpEventQueue();
-            currentStdout.writeln("stdout 1");
-            print("stdout 2");
-            currentStdout.writeln("stdout 3");
-            print("stdout 4");
-            currentStdout.writeln("stdout 5");
-          }).combineOutput().lines,
-          emitsInOrder(
-              ["stdout 1", "stdout 2", "stdout 3", "stdout 4", "stdout 5"]));
+        Script.capture((_) async {
+          await pumpEventQueue();
+          currentStdout.writeln("stdout 1");
+          print("stdout 2");
+          currentStdout.writeln("stdout 3");
+          print("stdout 4");
+          currentStdout.writeln("stdout 5");
+        }).combineOutput().lines,
+        emitsInOrder([
+          "stdout 1",
+          "stdout 2",
+          "stdout 3",
+          "stdout 4",
+          "stdout 5",
+        ]),
+      );
     });
   });
 
   group("interleaves writes to stdout and stderr", () {
     test("synchronously", () {
       expect(
-          Script.capture((_) {
-            currentStdout.writeln("stdout 1");
-            currentStderr.writeln("stderr 1");
-            print("stdout 2");
-            currentStderr.writeln("stderr 2");
-            currentStdout.writeln("stdout 3");
-            currentStdout.writeln("stdout 4");
-            currentStderr.writeln("stderr 3");
-          }).combineOutput().lines,
-          emitsInOrder([
-            "stdout 1",
-            "stderr 1",
-            "stdout 2",
-            "stderr 2",
-            "stdout 3",
-            "stdout 4",
-            "stderr 3"
-          ]));
+        Script.capture((_) {
+          currentStdout.writeln("stdout 1");
+          currentStderr.writeln("stderr 1");
+          print("stdout 2");
+          currentStderr.writeln("stderr 2");
+          currentStdout.writeln("stdout 3");
+          currentStdout.writeln("stdout 4");
+          currentStderr.writeln("stderr 3");
+        }).combineOutput().lines,
+        emitsInOrder([
+          "stdout 1",
+          "stderr 1",
+          "stdout 2",
+          "stderr 2",
+          "stdout 3",
+          "stdout 4",
+          "stderr 3",
+        ]),
+      );
     });
 
     test("asynchronously", () {
       expect(
-          Script.capture((_) async {
-            await pumpEventQueue();
-            currentStdout.writeln("stdout 1");
-            currentStderr.writeln("stderr 1");
-            print("stdout 2");
-            currentStderr.writeln("stderr 2");
-            currentStdout.writeln("stdout 3");
-            currentStdout.writeln("stdout 4");
-            currentStderr.writeln("stderr 3");
-          }).combineOutput().lines,
-          emitsInOrder([
-            "stdout 1",
-            "stderr 1",
-            "stdout 2",
-            "stderr 2",
-            "stdout 3",
-            "stdout 4",
-            "stderr 3"
-          ]));
+        Script.capture((_) async {
+          await pumpEventQueue();
+          currentStdout.writeln("stdout 1");
+          currentStderr.writeln("stderr 1");
+          print("stdout 2");
+          currentStderr.writeln("stderr 2");
+          currentStdout.writeln("stdout 3");
+          currentStdout.writeln("stdout 4");
+          currentStderr.writeln("stderr 3");
+        }).combineOutput().lines,
+        emitsInOrder([
+          "stdout 1",
+          "stderr 1",
+          "stdout 2",
+          "stderr 2",
+          "stdout 3",
+          "stdout 4",
+          "stderr 3",
+        ]),
+      );
     });
   });
 
@@ -207,8 +213,9 @@ void main() {
     });
 
     test("completes with the given exit code when fail() is called", () {
-      var script =
-          Script.capture((_) => cli_script.fail("oh no", exitCode: 42));
+      var script = Script.capture(
+        (_) => cli_script.fail("oh no", exitCode: 42),
+      );
       script.stderr.drain<void>();
       expect(script.exitCode, completion(equals(42)));
     });
@@ -216,57 +223,65 @@ void main() {
     group("forwards a child script's exit code", () {
       test("when the child's done future isn't listened", () {
         expect(
-            Script.capture((_) {
-              mainScript("exitCode = 123;");
-            }).exitCode,
-            completion(equals(123)));
+          Script.capture((_) {
+            mainScript("exitCode = 123;");
+          }).exitCode,
+          completion(equals(123)),
+        );
       });
 
       test("when the child's done future is piped through the callback", () {
         expect(
-            Script.capture((_) => mainScript("exitCode = 123;").done).exitCode,
-            completion(equals(123)));
+          Script.capture((_) => mainScript("exitCode = 123;").done).exitCode,
+          completion(equals(123)),
+        );
       });
 
       test("when the child's done future error is top-leveled", () {
         expect(
-            Script.capture((_) {
-              mainScript("exitCode = 123;").done.then((_) {});
-            }).exitCode,
-            completion(equals(123)));
+          Script.capture((_) {
+            mainScript("exitCode = 123;").done.then((_) {});
+          }).exitCode,
+          completion(equals(123)),
+        );
       });
     });
 
     group("ignores a child script's exit code", () {
       test("when the child's done future exception is handled out-of-band", () {
         expect(
-            Script.capture((_) {
-              mainScript("exitCode = 123;").done.catchError((_) {});
-            }).exitCode,
-            completion(equals(0)));
+          Script.capture((_) {
+            mainScript("exitCode = 123;").done.catchError((_) {});
+          }).exitCode,
+          completion(equals(0)),
+        );
       });
 
       test("when the child's done future exception is handled in-band", () {
         expect(
-            Script.capture((_) =>
-                mainScript("exitCode = 123;").done.catchError((_) {})).exitCode,
-            completion(equals(0)));
+          Script.capture(
+            (_) => mainScript("exitCode = 123;").done.catchError((_) {}),
+          ).exitCode,
+          completion(equals(0)),
+        );
       });
 
       test("when the child's success field is accessed", () {
         expect(
-            Script.capture((_) {
-              mainScript("exitCode = 123;").success;
-            }).exitCode,
-            completion(equals(0)));
+          Script.capture((_) {
+            mainScript("exitCode = 123;").success;
+          }).exitCode,
+          completion(equals(0)),
+        );
       });
 
       test("when the child's exitCode field is accessed", () {
         expect(
-            Script.capture((_) {
-              mainScript("exitCode = 123;").exitCode;
-            }).exitCode,
-            completion(equals(0)));
+          Script.capture((_) {
+            mainScript("exitCode = 123;").exitCode;
+          }).exitCode,
+          completion(equals(0)),
+        );
       });
     });
 
@@ -308,8 +323,7 @@ void main() {
       expect(doneComplete, isTrue);
     });
 
-    test(
-        "completes when an error is top-leveled even if the callback isn't "
+    test("completes when an error is top-leveled even if the callback isn't "
         "done", () async {
       var script = Script.capture((_) {
         Future<void>.error("oh no");
@@ -346,26 +360,30 @@ void main() {
     test("spawning a child script throws an error", () {
       var childSpawnedCompleter = Completer<void>();
       var captureDoneCompleter = Completer<void>();
-      captureDoneCompleter.complete(Script.capture((_) {
-        captureDoneCompleter.future.then((_) {
-          try {
-            mainScript("");
-            childSpawnedCompleter.complete();
-          } catch (error, stackTrace) {
-            childSpawnedCompleter.completeError(error, stackTrace);
-          }
-        });
-      }).done);
+      captureDoneCompleter.complete(
+        Script.capture((_) {
+          captureDoneCompleter.future.then((_) {
+            try {
+              mainScript("");
+              childSpawnedCompleter.complete();
+            } catch (error, stackTrace) {
+              childSpawnedCompleter.completeError(error, stackTrace);
+            }
+          });
+        }).done,
+      );
 
       expect(childSpawnedCompleter.future, throwsStateError);
     });
 
     test("additional errors are swallowed", () async {
       var captureDoneCompleter = Completer<void>();
-      captureDoneCompleter.complete(Script.capture((_) async {
-        await captureDoneCompleter.future;
-        throw "oh no";
-      }).done);
+      captureDoneCompleter.complete(
+        Script.capture((_) async {
+          await captureDoneCompleter.future;
+          throw "oh no";
+        }).done,
+      );
 
       // Give "oh no" time to get top-leveled if it's going to.
       await pumpEventQueue();

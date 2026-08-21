@@ -75,7 +75,8 @@ abstract class EventSinkBase<T> implements EventSink<T> {
 ///
 /// This takes care of ensuring that events can't be added after [close] is
 /// called or during a call to [onStream].
-abstract class StreamSinkBase<T> extends EventSinkBase<T>
+abstract class StreamSinkBase<T>()
+    extends EventSinkBase<T>
     implements StreamSink<T> {
   /// Whether a call to [addStream] is ongoing.
   bool _addingStream = false;
@@ -89,10 +90,14 @@ abstract class StreamSinkBase<T> extends EventSinkBase<T>
 
     _addingStream = true;
     var completer = Completer<void>.sync();
-    stream.listen(onAdd, onError: onError, onDone: () {
-      _addingStream = false;
-      completer.complete();
-    });
+    stream.listen(
+      onAdd,
+      onError: onError,
+      onDone: () {
+        _addingStream = false;
+        completer.complete();
+      },
+    );
     return completer.future;
   }
 
@@ -114,13 +119,10 @@ abstract class StreamSinkBase<T> extends EventSinkBase<T>
 ///
 /// This takes care of ensuring that events can't be added after [close] is
 /// called or during a call to [onStream].
-abstract class IOSinkBase extends StreamSinkBase<List<int>> implements IOSink {
+abstract class IOSinkBase([
   /// See [IOSink.encoding] from `dart:io`.
-  @override
-  Encoding encoding;
-
-  IOSinkBase([this.encoding = utf8]);
-
+  @override var Encoding encoding = utf8,
+]) extends StreamSinkBase<List<int>> implements IOSink {
   /// See [IOSink.flush] from `dart:io`.
   ///
   /// Because this base class doesn't do any buffering of its own, [flush]

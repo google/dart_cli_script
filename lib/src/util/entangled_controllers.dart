@@ -30,7 +30,7 @@ import 'sink_base.dart';
 /// Note: these controllers are effectively synchronous, and so should only have
 /// events added to them at the end of event loops.
 Tuple2<StreamController<T>, StreamController<T>>
-    createEntangledControllers<T>() {
+createEntangledControllers<T>() {
   var buffer = _EntangledBuffer<T>();
 
   var controller1 = _EntangledController<T>(buffer, true);
@@ -58,17 +58,15 @@ class _EntangledBuffer<T> {
   ///
   /// The [StreamSink] methods on this controller should not be accessed outside
   /// of [_EntangledBuffer].
-  final StreamController<T> controller1;
+  final StreamController<T> controller1 = StreamController(sync: true);
 
   /// The entangled controller that corresponds to events labeled `false`.
   ///
   /// The [StreamSink] methods on this controller should not be accessed outside
   /// of [_EntangledBuffer].
-  final StreamController<T> controller2;
+  final StreamController<T> controller2 = StreamController(sync: true);
 
-  _EntangledBuffer()
-      : controller1 = StreamController(sync: true),
-        controller2 = StreamController(sync: true) {
+  new() {
     controller1.onListen = _flush;
     controller2.onListen = _flush;
   }
@@ -159,14 +157,13 @@ class _EntangledBuffer<T> {
 
 /// A wrapper that pipes inputs to [_EntangledBuffer] and exposes output from
 /// one of [_EntangledBuffer]'s controllers.
-class _EntangledController<T> extends StreamSinkBase<T>
-    implements StreamController<T> {
+class _EntangledController<T>(
   /// The buffer that this wraps.
-  final _EntangledBuffer<T> _buffer;
+  final _EntangledBuffer<T> _buffer,
 
   /// Whether this is [_buffer.controller1] or [_buffer.controller2].
-  final bool _isController1;
-
+  final bool _isController1,
+) extends StreamSinkBase<T> implements StreamController<T> {
   StreamController<T> get _outputController =>
       _isController1 ? _buffer.controller1 : _buffer.controller2;
 
@@ -206,13 +203,14 @@ class _EntangledController<T> extends StreamSinkBase<T>
   @override
   StreamSink<T> get sink => this;
 
-  _EntangledController(this._buffer, this._isController1);
-
   @override
   Future<void> addStream(Stream<T> stream, {bool? cancelOnError}) {
     if (cancelOnError == true) {
-      stream = stream.transform(StreamTransformer(
-          (stream, _) => stream.listen(null, cancelOnError: true)));
+      stream = stream.transform(
+        StreamTransformer(
+          (stream, _) => stream.listen(null, cancelOnError: true),
+        ),
+      );
     }
 
     return super.addStream(stream);

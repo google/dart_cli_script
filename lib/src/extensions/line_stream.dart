@@ -53,8 +53,10 @@ extension LineStreamExtensions on Stream<String> {
   /// not both be passed at once.
   ///
   /// See [LineAndSpanStreamExtensions].
-  Stream<Tuple2<String, SourceSpanWithContext>> withSpans(
-      {Uri? sourceUrl, String? sourcePath}) {
+  Stream<Tuple2<String, SourceSpanWithContext>> withSpans({
+    Uri? sourceUrl,
+    String? sourcePath,
+  }) {
     if (sourcePath != null) {
       if (sourceUrl != null) {
         throw ArgumentError("Only one of url and path may be passed.");
@@ -66,12 +68,21 @@ extension LineStreamExtensions on Stream<String> {
     var offset = 0;
     return map((line) {
       var span = SourceSpanWithContext(
-          SourceLocation(offset,
-              sourceUrl: sourceUrl, line: lineNumber, column: 0),
-          SourceLocation(offset + line.length,
-              sourceUrl: sourceUrl, line: lineNumber, column: line.length),
-          line,
-          line);
+        SourceLocation(
+          offset,
+          sourceUrl: sourceUrl,
+          line: lineNumber,
+          column: 0,
+        ),
+        SourceLocation(
+          offset + line.length,
+          sourceUrl: sourceUrl,
+          line: lineNumber,
+          column: line.length,
+        ),
+        line,
+        line,
+      );
       lineNumber++;
       offset += line.length + 1;
       return Tuple2(line, span);
@@ -88,26 +99,35 @@ extension LineStreamExtensions on Stream<String> {
   /// `true` at the same time as [exclude].
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
-  Stream<String> grep(String regexp,
-      {bool exclude = false,
-      bool onlyMatching = false,
-      bool caseSensitive = true,
-      bool unicode = false,
-      bool dotAll = false}) {
+  /// [RegExp.new].
+  Stream<String> grep(
+    String regexp, {
+    bool exclude = false,
+    bool onlyMatching = false,
+    bool caseSensitive = true,
+    bool unicode = false,
+    bool dotAll = false,
+  }) {
     if (exclude && onlyMatching) {
       throw ArgumentError(
-          "The exclude and onlyMatching flags can't both be set");
+        "The exclude and onlyMatching flags can't both be set",
+      );
     }
 
-    var pattern = RegExp(regexp,
-        caseSensitive: caseSensitive, unicode: unicode, dotAll: dotAll);
+    var pattern = RegExp(
+      regexp,
+      caseSensitive: caseSensitive,
+      unicode: unicode,
+      dotAll: dotAll,
+    );
 
     return onlyMatching
-        ? expand((line) => pattern
-            .allMatches(line)
-            .map((match) => match.group(0)!)
-            .where((match) => match.isNotEmpty))
+        ? expand(
+            (line) => pattern
+                .allMatches(line)
+                .map((match) => match.group(0)!)
+                .where((match) => match.isNotEmpty),
+          )
         : where((line) => pattern.hasMatch(line) != exclude);
   }
 
@@ -121,17 +141,22 @@ extension LineStreamExtensions on Stream<String> {
   /// followed by a number return the character immediately following them.
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
-  Stream<String> replace(String regexp, String replacement,
-          {bool all = false,
-          bool caseSensitive = true,
-          bool unicode = false,
-          bool dotAll = false}) =>
-      replaceMapped(regexp, (match) => replaceMatch(match, replacement),
-          all: all,
-          caseSensitive: caseSensitive,
-          unicode: unicode,
-          dotAll: dotAll);
+  /// [RegExp.new].
+  Stream<String> replace(
+    String regexp,
+    String replacement, {
+    bool all = false,
+    bool caseSensitive = true,
+    bool unicode = false,
+    bool dotAll = false,
+  }) => replaceMapped(
+    regexp,
+    (match) => replaceMatch(match, replacement),
+    all: all,
+    caseSensitive: caseSensitive,
+    unicode: unicode,
+    dotAll: dotAll,
+  );
 
   /// Replaces matches of [regexp] with the result of calling [replace].
   ///
@@ -139,18 +164,26 @@ extension LineStreamExtensions on Stream<String> {
   /// replaces all matches in each line instead.
   ///
   /// The [caseSensitive], [unicode], and [dotAll] flags are the same as for
-  /// [new RegExp].
+  /// [RegExp.new].
   Stream<String> replaceMapped(
-      String regexp, String Function(Match match) replace,
-      {bool all = false,
-      bool caseSensitive = true,
-      bool unicode = false,
-      bool dotAll = false}) {
-    var pattern = RegExp(regexp,
-        caseSensitive: caseSensitive, unicode: unicode, dotAll: dotAll);
-    return map((line) => all
-        ? line.replaceAllMapped(pattern, replace)
-        : line.replaceFirstMapped(pattern, replace));
+    String regexp,
+    String Function(Match match) replace, {
+    bool all = false,
+    bool caseSensitive = true,
+    bool unicode = false,
+    bool dotAll = false,
+  }) {
+    var pattern = RegExp(
+      regexp,
+      caseSensitive: caseSensitive,
+      unicode: unicode,
+      dotAll: dotAll,
+    );
+    return map(
+      (line) => all
+          ? line.replaceAllMapped(pattern, replace)
+          : line.replaceFirstMapped(pattern, replace),
+    );
   }
 
   /// Returns a stream that emits the same events as this one, but also prints
@@ -158,9 +191,9 @@ extension LineStreamExtensions on Stream<String> {
   ///
   /// This is primarily intended for debugging.
   Stream<String> get teeToStderr => map((line) {
-        currentStderr.writeln(line);
-        return line;
-      });
+    currentStderr.writeln(line);
+    return line;
+  });
 
   /// Passes the strings emitted by this stream as arguments to [callback].
   ///
@@ -193,34 +226,38 @@ extension LineStreamExtensions on Stream<String> {
   ///
   /// See also `xargs` in `package:cli_script/cli_script.dart`, which takes
   /// arguments from [stdin] rather than from this string stream.
-  Script xargs(FutureOr<void> Function(List<String> args) callback,
-      {int? maxArgs,
-      String? name,
-      void Function(ProcessSignal signal)? onSignal}) {
+  Script xargs(
+    FutureOr<void> Function(List<String> args) callback, {
+    int? maxArgs,
+    String? name,
+    void Function(ProcessSignal signal)? onSignal,
+  }) {
     if (maxArgs != null && maxArgs < 1) {
       throw RangeError.range(maxArgs, 1, null, 'maxArgs');
     }
 
     var signalCloser = StreamCloser<String>();
     var self = transform(signalCloser);
-    var chunks =
-        maxArgs != null ? self.slices(maxArgs) : self.toList().asStream();
+    var chunks = maxArgs != null
+        ? self.slices(maxArgs)
+        : self.toList().asStream();
 
     return Script.capture(
-        (_) async {
-          await for (var chunk in chunks) {
-            if (signalCloser.isClosed) break;
-            await callback(chunk);
-          }
-          if (signalCloser.isClosed) {
-            throw ScriptException(name ?? 'xargs', 143);
-          }
-        },
-        name: name,
-        onSignal: (signal) {
-          signalCloser.close();
-          if (onSignal != null) onSignal(signal);
-          return true;
-        });
+      (_) async {
+        await for (var chunk in chunks) {
+          if (signalCloser.isClosed) break;
+          await callback(chunk);
+        }
+        if (signalCloser.isClosed) {
+          throw ScriptException(name ?? 'xargs', 143);
+        }
+      },
+      name: name,
+      onSignal: (signal) {
+        signalCloser.close();
+        if (onSignal != null) onSignal(signal);
+        return true;
+      },
+    );
   }
 }

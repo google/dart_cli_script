@@ -21,13 +21,13 @@ import 'package:path/path.dart' as p;
 import 'package:string_scanner/string_scanner.dart';
 
 /// CLI arguments parsed from a `executableAndArgs` string.
-class CliArguments {
+class CliArguments._(
   /// The executable to run.
-  final String executable;
+  final String executable,
 
   /// The arguments to the executable, with globs not yet resolved.
-  final List<_Argument> _arguments;
-
+  final List<_Argument> _arguments,
+) {
   /// Parses [argString], a shell-style string of space-separated arguments,
   /// into a list of separate arguments.
   ///
@@ -37,7 +37,7 @@ class CliArguments {
   /// handle its own glob expansion.
   ///
   /// Throws a [FormatException] if [argString] is malformed.
-  factory CliArguments.parse(String argString, {bool? glob}) {
+  factory parse(String argString, {bool? glob}) {
     glob ??= !Platform.isWindows;
 
     var scanner = StringScanner(argString);
@@ -57,8 +57,6 @@ class CliArguments {
     return CliArguments._(executable, args);
   }
 
-  CliArguments._(this.executable, this._arguments);
-
   /// Consumes zero or more spaces.
   static void _consumeSpaces(StringScanner scanner) {
     while (scanner.scanChar($space)) {}
@@ -74,7 +72,9 @@ class CliArguments {
       if (next == $space || next == null) {
         var glob = isGlobActive ? globBuffer?.toString() : null;
         return _Argument(
-            plainBuffer.toString(), glob == null ? null : Glob(glob));
+          plainBuffer.toString(),
+          glob == null ? null : Glob(glob),
+        );
       } else if (next == $double_quote || next == $single_quote) {
         scanner.readChar();
 
@@ -94,7 +94,8 @@ class CliArguments {
         var char = scanner.readChar();
         plainBuffer.writeCharCode(char);
         globBuffer?.writeCharCode(char);
-        isGlobActive = glob &&
+        isGlobActive =
+            glob &&
             (isGlobActive ||
                 char == $asterisk ||
                 char == $question ||
@@ -131,24 +132,23 @@ class CliArguments {
   /// If the arguments include [Glob]s, they will be resolved to concrete file
   /// paths (relative to [root], which defaults to the current directory) before
   /// being returned.
-  Future<List<String>> arguments({String? root}) async =>
-      [for (var argument in _arguments) ...await argument.resolve(root: root)];
+  Future<List<String>> arguments({String? root}) async => [
+    for (var argument in _arguments) ...await argument.resolve(root: root),
+  ];
 }
 
 /// An argument parsed from a `executableAndArgs` string.
-class _Argument {
+class _Argument(
   /// The plain text of the argument, to be used if globbing is disabled or if
   /// [_glob] matches no files.
-  final String _plain;
+  final String _plain,
 
   /// The glob for the argument.
   ///
   /// If this is non-`null`, the files it matches are used as the arguments in
   /// place of [_plain]. If it matches no files, [_plain] is used instead.
-  final Glob? _glob;
-
-  _Argument(this._plain, this._glob);
-
+  final Glob? _glob,
+) {
   /// Returns the files matched by this argument's [Glob] if it has one and if
   /// it matches at least one file, or the plain argument string otherwise.
   ///
@@ -159,7 +159,7 @@ class _Argument {
       var absolute = p.isAbsolute(glob.pattern);
       var globbed = [
         await for (var entity in glob.list(root: root))
-          absolute ? entity.path : p.relative(entity.path, from: root)
+          absolute ? entity.path : p.relative(entity.path, from: root),
       ];
       if (globbed.isNotEmpty) return globbed;
     }
@@ -168,7 +168,7 @@ class _Argument {
 }
 
 /// Converts [argument] to a string and escapes it so it's parsed as a single
-/// argument with no glob expansion by [new Script] and related functions.
+/// argument with no glob expansion by [Script] and related functions.
 ///
 /// For example, `run("cp -r ${arg(source)} build/")`.
 String arg(Object argument) {
@@ -199,8 +199,8 @@ String arg(Object argument) {
 }
 
 /// Converts all elements of [arguments] to strings and escapes them so they're
-/// parsed as separate arguments with no glob expansion by [new Script] and
-/// related functions.
+/// parsed as separate arguments with no glob expansion by [Script] and related
+/// functions.
 ///
 /// For example, `run("cp -r ${args(directories)} build/")`.
 String args(Iterable<Object> arguments) => arguments.map(arg).join(" ");

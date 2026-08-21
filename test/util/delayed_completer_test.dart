@@ -25,11 +25,13 @@ void main() {
     Result<String>? result;
     setUp(() {
       result = null;
-      completer.future.then((value) {
-        result = Result.value(value);
-      }).onError((error, stackTrace) {
-        result = Result.error(error!, stackTrace);
-      });
+      completer.future
+          .then((value) {
+            result = Result.value(value);
+          })
+          .onError((error, stackTrace) {
+            result = Result.error(error!, stackTrace);
+          });
     });
 
     test("completes with a value", () async {

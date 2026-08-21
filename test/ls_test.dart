@@ -27,11 +27,12 @@ void main() {
       await d.file("baz.zip").create();
 
       expect(
-          ls("*.txt", root: d.sandbox),
-          emitsInOrder([
-            emitsInAnyOrder(["foo.txt", "bar.txt"]),
-            emitsDone
-          ]));
+        ls("*.txt", root: d.sandbox),
+        emitsInOrder([
+          emitsInAnyOrder(["foo.txt", "bar.txt"]),
+          emitsDone,
+        ]),
+      );
     });
 
     test("an absolute glob expands to absolute paths", () async {
@@ -40,11 +41,12 @@ void main() {
       await d.file("baz.zip").create();
 
       expect(
-          ls(p.join(Glob.quote(d.sandbox), "*.txt"), root: d.sandbox),
-          emitsInOrder([
-            emitsInAnyOrder([d.path("foo.txt"), d.path("bar.txt")]),
-            emitsDone
-          ]));
+        ls(p.join(Glob.quote(d.sandbox), "*.txt"), root: d.sandbox),
+        emitsInOrder([
+          emitsInAnyOrder([d.path("foo.txt"), d.path("bar.txt")]),
+          emitsDone,
+        ]),
+      );
     });
   });
 }

@@ -27,32 +27,38 @@ var _nextId = 0;
 String uid() => "cli_script_test_${_nextId++}";
 
 /// Runs the Dart code [code] as a subprocess [Script].
-Script dartScript(String code,
-    {Iterable<String>? args,
-    String? name,
-    String? workingDirectory,
-    Map<String, String>? environment,
-    bool includeParentEnvironment = true}) {
+Script dartScript(
+  String code, {
+  Iterable<String>? args,
+  String? name,
+  String? workingDirectory,
+  Map<String, String>? environment,
+  bool includeParentEnvironment = true,
+}) {
   var script = d.path("${uid()}.dart");
   File(script).writeAsStringSync(code);
 
-  return Script(arg(Platform.executable),
-      args: [...Platform.executableArguments, script, ...?args],
-      name: name,
-      workingDirectory: workingDirectory,
-      environment: environment,
-      includeParentEnvironment: includeParentEnvironment);
+  return Script(
+    arg(Platform.executable),
+    args: [...Platform.executableArguments, script, ...?args],
+    name: name,
+    workingDirectory: workingDirectory,
+    environment: environment,
+    includeParentEnvironment: includeParentEnvironment,
+  );
 }
 
 /// A shorthand for [dartScript] that runs [code] in the body of an async
 /// `main()` method with access to `dart:async`, `dart:convert`, and `dart:io`.
-Script mainScript(String code,
-        {Iterable<String>? args,
-        String? name,
-        String? workingDirectory,
-        Map<String, String>? environment,
-        bool includeParentEnvironment = true}) =>
-    dartScript("""
+Script mainScript(
+  String code, {
+  Iterable<String>? args,
+  String? name,
+  String? workingDirectory,
+  Map<String, String>? environment,
+  bool includeParentEnvironment = true,
+}) => dartScript(
+  """
       import 'dart:async';
       import 'dart:convert';
       import 'dart:io';
@@ -61,19 +67,20 @@ Script mainScript(String code,
         $code
       }
     """,
-        args: args,
-        name: name,
-        workingDirectory: workingDirectory,
-        environment: environment,
-        includeParentEnvironment: includeParentEnvironment);
+  args: args,
+  name: name,
+  workingDirectory: workingDirectory,
+  environment: environment,
+  includeParentEnvironment: includeParentEnvironment,
+);
 
 /// Returns a matcher that verifies that the object is a [ScriptException] with
 /// the given exit code.
 Matcher isScriptException(int exitCode) => predicate((error) {
-      expect(error, isA<ScriptException>());
-      expect((error as ScriptException).exitCode, equals(exitCode));
-      return true;
-    });
+  expect(error, isA<ScriptException>());
+  expect((error as ScriptException).exitCode, equals(exitCode));
+  return true;
+});
 
 /// Returns a matcher that verifies that the object throws a [ScriptException]
 /// with the given exit code.
